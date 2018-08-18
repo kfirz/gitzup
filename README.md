@@ -45,6 +45,18 @@ TBD.
 
   Manifests declare the *desired state* of resources. The idea is that Gitzup will query these resources for their *current state*, and will automatically **_transition_** these resources from their current state to the desired state.
 
+## Components
+
+Gitzup is composed of the following building blocks:
+
+- User interface: a single-page application (SPA) built with Angular/React (TBD)
+
+- API server: used by the UI and/or external clients.
+
+- Web-hooks server: invoked by external services to notify Gitzup of important events (eg. GitHub webhooks calling Gitzup on `push` events).
+
+- Agent: a daemon that executes pipelines.
+
 ## Contributing
 
 Please see our [contributing](./CONTRIBUTING.md) document.
