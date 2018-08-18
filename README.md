@@ -6,7 +6,13 @@
 
 Gitzup is an opinionated DevOps platform for managing all development aspects, from infrastructure, through coding, to deployment.
 
-## Concepts & Brief
+## Installation
+
+TBD.
+
+## Usage
+
+### Concepts & Brief
 
 - `GitHubRepository`
 
@@ -41,3 +47,4 @@ Gitzup is an opinionated DevOps platform for managing all development aspects, f
 
 ## Contributing
 
+Please see our [contributing](./CONTRIBUTING.md) document.
