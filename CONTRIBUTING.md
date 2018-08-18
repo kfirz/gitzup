@@ -11,13 +11,13 @@ Gitzup uses `Make` as a build system, though internally the standard Go tools ar
 ### Building
 
 ```bash
-$ make build
+$ make
 ```
 
 ### Testing
 
 ```bash
-$ make build test
+$ make test
 ```
 
 ## Pull Request process
