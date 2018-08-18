@@ -31,10 +31,21 @@ func Daemon(config Config) {
 	}
 	defer client.Close()
 
+	// Locate the subscription, fail if missing
+	subscription := client.Subscription(config.SubscriptionName)
+	log.Printf("Checking subscription '%s' exists...\n", subscription)
+	exists, err := subscription.Exists(ctx)
+	if err != nil {
+		log.Fatalf("Failed checking if subscription exists: %v", err)
+	} else if exists == false {
+		log.Fatalln("Subscription could not be found!")
+	}
+
 	// Start receiving messages (in separate goroutines)
-	subscription := client.SubscriptionInProject(config.SubscriptionName, config.GcpProject)
+	log.Printf("Subscribing to: %s", subscription)
 	err = subscription.Receive(ctx, func(ctx context.Context, msg *pubsub.Message) {
-		log.Println(msg)
+		log.Printf("Message received: %v", msg)
+		msg.Ack()
 	})
 	if err != nil {
 		log.Fatalf("Failed to subscribe to '%s': %v", subscription, err)
