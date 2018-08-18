@@ -7,9 +7,12 @@ clean:
 	go clean
 	rm -vf ./agent ./api-server ./webhooks-server
 
+.PHONY: deps
+deps:
+	dep ensure
+
 .PHONY: $(CMD_AGENT)
 $(CMD_AGENT):
-	dep ensure
 	go build -o $@ ./cmd/$@/
 
 .PHONY: test
