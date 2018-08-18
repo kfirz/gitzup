@@ -1,0 +1,7 @@
+/.github
+/deployments
+/test
+/*.md
+/buildagent
+/api-server
+/webhooks-server

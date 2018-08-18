@@ -1,9 +1,11 @@
 CMD_AGENT = $(shell ls ./cmd/)
 
+all: $(CMD_AGENT)
+
 .PHONY: clean
 clean:
 	go clean
-	rm -f ./agent
+	rm -vf ./agent ./api-server ./webhooks-server
 
 .PHONY: $(CMD_AGENT)
 $(CMD_AGENT):

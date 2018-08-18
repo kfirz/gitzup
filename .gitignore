@@ -13,4 +13,7 @@
 
 # Imports from dep ensure
 /vendor
-/agent
+/buildagent
+/api-server
+/webhooks-server
+/*-sa-key-*.json
