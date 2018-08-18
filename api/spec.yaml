@@ -1,0 +1,26 @@
+# TODO: convert to JSON schema
+
+version: 1            # build spec version, must be "1"
+timeout: 10m          # total execution timeout; time suffixes can be s, m, or h (seconds, minutes, hours)
+environment: ''       # if this build performs a deployment, specify the environment here (can be an expression); result of the expression is available to steps as the DEPLOY_ENVIRONMENT environment variable
+strands:              # required array of strands (one or more)
+- name: strand-name   # required, must match [a-z][a-z0-9_-]*[a-z0-9]
+  dir: .              # optional subdirectory to be mounted as /usr/local/src to steps (steps can override)
+  after: ['']         # optional array of other strands required to finish successfully before this strand
+  timeout: 10m        # strand execution timeout; time suffixes can be s, m, or h (seconds, minutes, hours)
+  steps:              # required array of steps (one or more)
+  - name: step-name   # optional, must match [a-z][a-z0-9_-]*[a-z0-9]
+    type: repo:tag    # required Docker image (will be pulled)
+    entrypoint: []    # optional Docker entrypoint override
+    cmd: []           # optional Docker cmd override
+    dir: .            # optional subdirectory to be mounted as /usr/local/src
+    user: ''          # optional user to run as inside the Docker image
+    timeout: 10m      # step execution timeout; time suffixes can be s, m, or h (seconds, minutes, hours)
+    env:              # optional array of environment variables to provide
+    - 'KEY=VALUE'     # items can be strings in the format of KEY=VALUE
+    - key: ''         # alternatively they can be objects with "key" and "value" properties
+      value: ''
+artifacts:            # optional array of artifact specifications that this pipeline will capture
+- name: ''            # artifact logical name, must match [a-z][a-z0-9_-]*[a-z0-9]
+  path: ''            # local path of the artifact, can be a glob expression
+  required: true      # whether the artifact must be found or not
