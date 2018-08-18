@@ -24,7 +24,7 @@ func Daemon(config Config) {
 	// Create context for the daemon
 	ctx := context.Background()
 
-	// Creates a client.
+	// Creates the PubSub client.
 	client, err := pubsub.NewClient(ctx, config.GcpProject)
 	if err != nil {
 		log.Fatalf("Failed to create GCP Pub/Sub client: %v", err)
@@ -39,5 +39,4 @@ func Daemon(config Config) {
 	if err != nil {
 		log.Fatalf("Failed to subscribe to '%s': %v", subscription, err)
 	}
-
 }
