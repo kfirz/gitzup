@@ -9,9 +9,8 @@ import (
 func main() {
 
 	// Parse command-line
-	var project, topic, subscription string
+	var project, subscription string
 	flag.StringVar(&project, "project", "", "Google Cloud project ID (required)")
-	flag.StringVar(&topic, "topic", "", "Google Cloud Pub/Sub topic (required)")
 	flag.StringVar(&subscription, "subscription", "", "Google Cloud Pub/Sub subscription (required)")
 	flag.Parse()
 
@@ -20,16 +19,12 @@ func main() {
 		log.Fatalln("GCP project is required")
 		flag.Usage()
 	}
-	if topic == "" {
-		log.Fatalln("GCP Pub/Sub topic is required")
-		flag.Usage()
-	}
 	if subscription == "" {
 		log.Fatalln("GCP Pub/Sub subscription is required")
 		flag.Usage()
 	}
 
 	// Start daemon
-	buildagent.Daemon(buildagent.Config{GcpProject: project, TopicName: topic, SubscriptionName: subscription})
+	buildagent.Daemon(buildagent.Config{GcpProject: project, SubscriptionName: subscription})
 
 }
