@@ -10,8 +10,8 @@ clean:
 .PHONY: $(CMD_AGENT)
 $(CMD_AGENT):
 	dep ensure
-	go build -v -o $@ ./cmd/$@/
+	go build -o $@ ./cmd/$@/
 
 .PHONY: test
 test:
-	go test -v ./...
+	go test ./...
