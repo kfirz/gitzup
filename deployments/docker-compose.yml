@@ -1,0 +1,15 @@
+version: '3.7'
+services:
+
+  buildagent:
+    image: gitzup/buildagent:local
+    build:
+      context: .
+      dockerfile: ./deployments/Dockerfile.buildagent
+    command:
+      - -project=gitzup
+      - -subscription=agents
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/secrets/gcp-service-account-key.json
+    volumes:
+      - ./buildagent-sa-key-b86028fc82c6.json:/app/secrets/gcp-service-account-key.json:ro
