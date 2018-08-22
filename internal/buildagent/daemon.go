@@ -2,22 +2,10 @@ package buildagent
 
 import (
 	"cloud.google.com/go/pubsub"
-	"github.com/kfirz/gitzup/internal/pipeline"
+	"fmt"
 	"golang.org/x/net/context"
 	"log"
 )
-
-func work(pipelinePath string) {
-	p, err := pipeline.ParsePipeline(pipelinePath)
-	if err != nil {
-		log.Fatalf("Pipeline '%s' could not be parsed: %s\n", pipelinePath, err.Error())
-	}
-
-	err = p.Build()
-	if err != nil {
-		log.Fatalf("Pipeline '%s' could not be built: %s\n", pipelinePath, err.Error())
-	}
-}
 
 func Daemon(config Config) {
 
@@ -43,11 +31,43 @@ func Daemon(config Config) {
 
 	// Start receiving messages (in separate goroutines)
 	log.Printf("Subscribing to: %s", subscription)
-	err = subscription.Receive(ctx, func(ctx context.Context, msg *pubsub.Message) {
-		log.Printf("Message received: %v", msg)
-		msg.Ack()
-	})
+	err = subscription.Receive(ctx, handleMessage)
 	if err != nil {
 		log.Fatalf("Failed to subscribe to '%s': %v", subscription, err)
 	}
+}
+
+func handleMessage(_ context.Context, msg *pubsub.Message) {
+	defer func() {
+		err := recover()
+		if err != nil {
+			// TODO: re-publish this message to the errors topic
+			log.Printf("Fatal error processing message: %#v\n", err)
+		}
+	}()
+
+	msg.Ack()
+
+	var request *BuildRequest
+	var err error
+	switch msg.Attributes["version"] {
+	default:
+		request, err = handleMessageV1(msg)
+		if err != nil {
+			panic(fmt.Sprintf("Failed processing v1 build request message '%s': %#v", string(msg.Data), err))
+		}
+	}
+
+	request.Apply()
+}
+
+func handleMessageV1(msg *pubsub.Message) (request *BuildRequest, err error) {
+	request, err = NewBuildRequestV1(msg.Attributes, msg.Data)
+	if err != nil {
+		return nil, err
+		panic(fmt.Sprintf("Failed processing a v1 build request message '%s': %#v", string(msg.Data), err))
+	}
+
+	log.Printf("Received build request: %#v\n", request)
+	return request, err
 }
