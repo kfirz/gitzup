@@ -1,8 +1,1 @@
-/.github
-/deployments
-/test
 /vendor
-/*.md
-/buildagent
-/api-server
-/webhooks-server
