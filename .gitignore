@@ -1,9 +1,8 @@
 # Binaries for programs and plugins
-*.exe
-*.exe~
-*.dll
 *.so
-*.dylib
+/buildagent
+/api-server
+/webhooks-server
 
 # Test binary, build with `go test -c`
 *.test
@@ -13,7 +12,6 @@
 
 # Imports from dep ensure
 /vendor
-/buildagent
-/api-server
-/webhooks-server
-/*-sa-key-*.json
+
+# Local files
+/*.local.*
