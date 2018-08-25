@@ -1,15 +1,45 @@
 version: '3.7'
 services:
 
-  buildagent:
-    image: gitzup/buildagent:local
+  api-server:
+    image: gitzup/api-server:dev
     build:
       context: .
-      dockerfile: ../build/Dockerfile.buildagent
-    command:
-      - -project=gitzup
-      - -subscription=agents
+      dockerfile: ./build/Dockerfile
+      args:
+      - target=api-server
     environment:
-      - GOOGLE_APPLICATION_CREDENTIALS=/app/secrets/gcp-service-account-key.json
+    - GOOGLE_APPLICATION_CREDENTIALS=/app/secrets/gcp-service-account-key.json
     volumes:
-      - ./buildagent-sa-key-b86028fc82c6.json:/app/secrets/gcp-service-account-key.json:ro
+    - ./buildagent-sa-key-b86028fc82c6.local.json:/app/secrets/gcp-service-account-key.json:ro
+    ports:
+    - 8001:8000
+
+  buildagent:
+    image: gitzup/buildagent:dev
+    build:
+      context: .
+      dockerfile: ./build/Dockerfile
+      args:
+      - target=buildagent
+    command:
+    - -project=gitzup
+    - -subscription=agents
+    environment:
+    - GOOGLE_APPLICATION_CREDENTIALS=/app/secrets/gcp-service-account-key.json
+    volumes:
+    - ./buildagent-sa-key-b86028fc82c6.local.json:/app/secrets/gcp-service-account-key.json:ro
+
+  webhooks-server:
+    image: gitzup/webhooks-server:dev
+    build:
+      context: .
+      dockerfile: ./build/Dockerfile
+      args:
+      - target=webhooks-server
+    environment:
+    - GOOGLE_APPLICATION_CREDENTIALS=/app/secrets/gcp-service-account-key.json
+    volumes:
+    - ./buildagent-sa-key-b86028fc82c6.local.json:/app/secrets/gcp-service-account-key.json:ro
+    ports:
+    - 8002:8000
