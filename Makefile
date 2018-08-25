@@ -11,6 +11,10 @@ clean:
 deps:
 	dep ensure
 
+.PHONY: assets
+assets:
+	../../../../bin/go-bindata -o ./internal/assets/data.go -pkg assets -prefix api/ ./api
+
 .PHONY: $(CMD_AGENT)
 $(CMD_AGENT):
 	go build -o $@ ./cmd/$@/
