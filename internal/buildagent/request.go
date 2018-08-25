@@ -1,13 +1,20 @@
 package buildagent
 
 import (
-	"bytes"
-	"encoding/json"
-	"errors"
 	"fmt"
-	"github.com/kfirz/gitzup/internal/assets"
-	"github.com/xeipuuv/gojsonschema"
+	"github.com/kfirz/gitzup/internal/util"
+	"log"
 )
+
+var buildRequestSchema *util.Schema
+
+func init() {
+	schema, err := util.NewSchema("build-request.schema.json", "resource.schema.json")
+	if err != nil {
+		panic(err)
+	}
+	buildRequestSchema = schema
+}
 
 type Resource struct {
 	Request BuildRequest           `json:"-"`
@@ -27,50 +34,10 @@ func (request *BuildRequest) WorkspacePath() string {
 }
 
 func NewBuildRequest(id string, b []byte) (*BuildRequest, error) {
-	// TODO: only build JSON schema one (instead of for every request)
-
-	buildRequestJsonSchema, err := assets.Asset("build-request.schema.json")
-	if err != nil {
-		return nil, err
-	}
-
-	resourceJsonSchema, err := assets.Asset("resource.schema.json")
-	if err != nil {
-		return nil, err
-	}
-
-	// create the main schema loader
-	schemaLoader := gojsonschema.NewSchemaLoader()
-
-	// add schema fragments
-	err = schemaLoader.AddSchemas(gojsonschema.NewBytesLoader(resourceJsonSchema))
-	if err != nil {
-		return nil, err
-	}
-
-	// compile the full schema
-	schema, err := schemaLoader.Compile(gojsonschema.NewBytesLoader(buildRequestJsonSchema))
-	if err != nil {
-		return nil, err
-	}
-
-	// validate the given document
-	validationResult, err := schema.Validate(gojsonschema.NewBytesLoader(b))
-	if err != nil {
-		return nil, err
-	} else if !validationResult.Valid() {
-		var msg = ""
-		for _, e := range validationResult.Errors() {
-			msg += fmt.Sprintf("\t- %s\n", e.String())
-		}
-		return nil, errors.New(fmt.Sprintf("Invalid request:\n%s", msg))
-	}
-
-	// JSON is valid; translate to BuildRequest instance
 	var req BuildRequest
-	decoder := json.NewDecoder(bytes.NewReader(b))
-	decoder.UseNumber()
-	err = decoder.Decode(&req)
+
+	// validate & parse the build request
+	err := buildRequestSchema.ParseAndValidate(&req, b)
 	if err != nil {
 		return nil, err
 	}
@@ -82,4 +49,18 @@ func NewBuildRequest(id string, b []byte) (*BuildRequest, error) {
 		resource.Request = req
 	}
 	return &req, nil
+}
+
+func (request *BuildRequest) Apply() error {
+	log.Printf("Applying build request '%#v'", request)
+
+	for _, resource := range request.Resources {
+		resource.Initialize()
+	}
+
+	for _, resource := range request.Resources {
+		resource.DiscoverState()
+	}
+
+	return nil
 }

@@ -6,6 +6,11 @@ import (
 	"log"
 )
 
+type Config struct {
+	GcpProject       string
+	SubscriptionName string
+}
+
 func Daemon(config Config) {
 
 	// Create context for the daemon
@@ -30,13 +35,13 @@ func Daemon(config Config) {
 
 	// Start receiving messages (in separate goroutines)
 	log.Printf("Subscribing to: %s", subscription)
-	err = subscription.Receive(ctx, handleMessage)
+	err = subscription.Receive(ctx, func(_ context.Context, msg *pubsub.Message) { handleMessage(msg) })
 	if err != nil {
 		log.Fatalf("Failed to subscribe to '%s': %v", subscription, err)
 	}
 }
 
-func handleMessage(_ context.Context, msg *pubsub.Message) {
+func handleMessage(msg *pubsub.Message) {
 	defer func() {
 		err := recover()
 		if err != nil {
