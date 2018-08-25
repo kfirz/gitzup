@@ -5,7 +5,7 @@ services:
     image: gitzup/buildagent:local
     build:
       context: .
-      dockerfile: ./deployments/Dockerfile.buildagent
+      dockerfile: ../build/Dockerfile.buildagent
     command:
       - -project=gitzup
       - -subscription=agents
