@@ -3,6 +3,7 @@
     "$id": "http://gitzup.com/v1/resource.schema.json",
     "description": "A resource specification.",
     "type": "object",
+    "additionalProperties": false,
     "required": [
         "type"
     ],
@@ -14,7 +15,8 @@
         },
         "config": {
             "description": "Resource configuration. This is sent to the resource Docker image on execution.",
-            "type": "object"
+            "type": "object",
+            "additionalProperties": true
         }
     }
 }
