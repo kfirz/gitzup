@@ -1,5 +1,4 @@
 FROM golang:1.9.7 AS build
-ARG target
 WORKDIR /go/src/github.com/kfirz/gitzup/
 RUN curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
 COPY ./Gopkg.lock ./Gopkg.toml ./
@@ -9,6 +8,7 @@ COPY ./cmd ./cmd/
 COPY ./internal ./internal/
 COPY ./web ./web/
 COPY ./Makefile ./
+ARG target
 RUN make ${target}
 
 ########################################################################################################################
@@ -22,6 +22,8 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/* && \
     update-ca-certificates
 WORKDIR /app
+ARG target
 COPY --from=build /go/src/github.com/kfirz/gitzup/${target} .
-ENTRYPOINT ["/app/${target}"]
+RUN ln -s /app/${target} /app/start && chmod +x /app/${target}
+ENTRYPOINT ["/app/start"]
 CMD ["--help"]
