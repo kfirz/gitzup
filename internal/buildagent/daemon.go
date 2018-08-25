@@ -2,7 +2,6 @@ package buildagent
 
 import (
 	"cloud.google.com/go/pubsub"
-	"fmt"
 	"golang.org/x/net/context"
 	"log"
 )
@@ -42,32 +41,21 @@ func handleMessage(_ context.Context, msg *pubsub.Message) {
 		err := recover()
 		if err != nil {
 			// TODO: re-publish this message to the errors topic
-			log.Printf("Fatal error processing message: %#v\n", err)
+			switch t := err.(type) {
+			case error:
+				log.Printf("Fatal error processing message '%s': %s\n", msg.ID, t.Error())
+			default:
+				log.Printf("Fatal error processing message: %#v\n", t)
+			}
 		}
 	}()
 
 	msg.Ack()
 
-	var request *BuildRequest
-	var err error
-	switch msg.Attributes["version"] {
-	default:
-		request, err = handleMessageV1(msg)
-		if err != nil {
-			panic(fmt.Sprintf("Failed processing v1 build request message '%s': %#v", string(msg.Data), err))
-		}
+	request, err := NewBuildRequest(msg.ID, msg.Data)
+	if err != nil {
+		panic(err)
 	}
 
 	request.Apply()
-}
-
-func handleMessageV1(msg *pubsub.Message) (request *BuildRequest, err error) {
-	request, err = NewBuildRequestV1(msg.Attributes, msg.Data)
-	if err != nil {
-		return nil, err
-		panic(fmt.Sprintf("Failed processing a v1 build request message '%s': %#v", string(msg.Data), err))
-	}
-
-	log.Printf("Received build request: %#v\n", request)
-	return request, err
 }
