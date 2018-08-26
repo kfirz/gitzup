@@ -52,12 +52,3 @@ webhooks-server: internal/assets/data.go $(INTERNAL_SRC) $(CMD_WEBHOOKS_SERVER_S
 .PHONY: test
 test: api-server buildagent webhooks-server $(CMD_RESOURCE_NAMES)
 	go test ./...
-
-.PHONY: docker
-docker:
-	docker build --build-arg target=api-server --tag gitzup/api-server:$(TAG) --file ./build/Dockerfile .
-	docker build --build-arg target=buildagent --tag gitzup/buildagent:$(TAG) --file ./build/Dockerfile .
-	docker build --build-arg target=webhooks-server --tag gitzup/webhooks-server:$(TAG) --file ./build/Dockerfile .
-	for i in $(CMD_RESOURCE_NAMES); do \
-		docker build --build-arg target=$$i --tag gitzup/$$i:$(TAG) --file ./build/Dockerfile .; \
-	done
