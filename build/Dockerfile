@@ -3,13 +3,12 @@ WORKDIR /go/src/github.com/kfirz/gitzup/
 RUN curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
 COPY ./Gopkg.lock ./Gopkg.toml ./
 RUN dep ensure -v -vendor-only
-ARG target
-RUN mkdir -p ./cmd/api-server ./cmd/buildagent ./cmd/webhooks-server ./cmd/resources
 COPY ./api ./api/
-COPY ./cmd/${target} ./cmd/${target}
+COPY ./cmd ./cmd/
 COPY ./internal ./internal/
 COPY ./web ./web/
 COPY ./Makefile ./
+ARG target
 RUN make ${target}
 
 ########################################################################################################################
