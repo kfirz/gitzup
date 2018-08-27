@@ -4,9 +4,8 @@ INOTIFY=$(which inotifywait 2>/dev/null)
 [[ -z "${INOTIFY}" ]] && echo "Install inotify-tools first." >&2 && exit 1
 
 function build {
-    RESOURCES=$(find ./cmd/resources -name '*.go' -type f | sed 's|^./cmd/resources/||' | sed 's|.go$||')
     for r in $(find ./cmd/resources -name '*.go' -type f | sed 's|^./cmd/resources/||' | sed 's|.go$||'); do
-        docker build --build-arg target=${r} --tag gitzup/${r}:dev --file ./build/Dockerfile .
+        docker build --quiet --build-arg target=${r} --tag gitzup/${r}:dev --file ./build/Dockerfile .
     done
 }
 
