@@ -10,7 +10,7 @@ function start {
     make ${TARGET}
     if [[ $? == 0 ]]; then
         echo "Starting ${TARGET}..." >&2
-        ./${TARGET} &
+        GOOGLE_APPLICATION_CREDENTIALS=$(ls *-sa-*.local.json|head -1) ./${TARGET} &
     else
         echo "Failed building ${TARGET}" >&2
     fi
