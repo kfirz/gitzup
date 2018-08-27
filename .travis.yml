@@ -12,27 +12,22 @@ addons:
 
 jobs:
   include:
-  - stage: Build
+  - stage: Docker
     name: API Server
-    script: docker build --build-arg target=api-server --tag gitzup/api-server:${TRAVIS_COMMIT} --file ./build/Dockerfile .
+    script:
+    - docker build --build-arg target=api-server --tag gitzup/api-server:${TRAVIS_COMMIT} --file ./build/Dockerfile .
+    - docker push gitzup/api-server:${TRAVIS_COMMIT}
   - name: Build Agent
-    script: docker build --build-arg target=buildagent --tag gitzup/buildagent:${TRAVIS_COMMIT} --file ./build/Dockerfile .
+    script:
+    - docker build --build-arg target=buildagent --tag gitzup/buildagent:${TRAVIS_COMMIT} --file ./build/Dockerfile .
+    - docker push gitzup/buildagent:${TRAVIS_COMMIT}
   - name: Webhooks Server
-    script: docker build --build-arg target=webhooks-server --tag gitzup/webhooks-server:${TRAVIS_COMMIT} --file ./build/Dockerfile .
+    script:
+    - docker build --build-arg target=webhooks-server --tag gitzup/webhooks-server:${TRAVIS_COMMIT} --file ./build/Dockerfile .
+    - docker push gitzup/webhooks-server:${TRAVIS_COMMIT}
   - name: Resources
     script:
     - for i in $(find ./cmd/resources -name '*.go' -type f | sed 's|^./cmd/resources/||' | sed 's|.go$||'); do
         docker build --build-arg target=$i --tag gitzup/$i:${TRAVIS_COMMIT} --file ./build/Dockerfile .;
-      done
-  - stage: Deploy
-    name: API Server
-    script: docker push gitzup/api-server:${TRAVIS_COMMIT}
-  - name: Build Agent
-    script: docker push gitzup/buildagent:${TRAVIS_COMMIT}
-  - name: Webhooks Server
-    script: docker push gitzup/webhooks-server:${TRAVIS_COMMIT}
-  - name: Resources
-    script:
-    - for i in $(find ./cmd/resources -name '*.go' -type f | sed 's|^./cmd/resources/||' | sed 's|.go$||'); do
         docker push gitzup/$i:${TRAVIS_COMMIT}
       done
