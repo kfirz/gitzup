@@ -10,8 +10,8 @@ func main() {
 
 	// Parse command-line
 	var project, subscription string
-	flag.StringVar(&project, "project", "", "Google Cloud project ID (required)")
-	flag.StringVar(&subscription, "subscription", "", "Google Cloud Pub/Sub subscription (required)")
+	flag.StringVar(&project, "project", "gitzup", "Google Cloud project ID (required)")
+	flag.StringVar(&subscription, "subscription", "agents", "Google Cloud Pub/Sub subscription (required)")
 	flag.Parse()
 
 	// Validate flags
@@ -19,6 +19,7 @@ func main() {
 		log.Fatalln("GCP project is required")
 		flag.Usage()
 	}
+
 	if subscription == "" {
 		log.Fatalln("GCP Pub/Sub subscription is required")
 		flag.Usage()
