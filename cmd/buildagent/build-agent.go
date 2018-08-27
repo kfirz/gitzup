@@ -16,13 +16,13 @@ func main() {
 
 	// Validate flags
 	if project == "" {
-		log.Fatalln("GCP project is required")
 		flag.Usage()
+		log.Fatalln("GCP project is required")
 	}
 
 	if subscription == "" {
-		log.Fatalln("GCP Pub/Sub subscription is required")
 		flag.Usage()
+		log.Fatalln("GCP Pub/Sub subscription is required")
 	}
 
 	// Start daemon
