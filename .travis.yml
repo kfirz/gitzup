@@ -15,18 +15,22 @@ jobs:
   - stage: Docker
     name: API Server
     script:
+    - echo -n "${DOCKER_IO_PASSWORD}" | docker login --username ${DOCKER_IO_USERNAME} --password-stdin
     - docker build --build-arg target=api-server --tag gitzup/api-server:${TRAVIS_COMMIT} --file ./build/Dockerfile .
     - docker push gitzup/api-server:${TRAVIS_COMMIT}
   - name: Build Agent
     script:
+    - echo -n "${DOCKER_IO_PASSWORD}" | docker login --username ${DOCKER_IO_USERNAME} --password-stdin
     - docker build --build-arg target=buildagent --tag gitzup/buildagent:${TRAVIS_COMMIT} --file ./build/Dockerfile .
     - docker push gitzup/buildagent:${TRAVIS_COMMIT}
   - name: Webhooks Server
     script:
+    - echo -n "${DOCKER_IO_PASSWORD}" | docker login --username ${DOCKER_IO_USERNAME} --password-stdin
     - docker build --build-arg target=webhooks-server --tag gitzup/webhooks-server:${TRAVIS_COMMIT} --file ./build/Dockerfile .
     - docker push gitzup/webhooks-server:${TRAVIS_COMMIT}
   - name: Resources
     script:
+    - echo -n "${DOCKER_IO_PASSWORD}" | docker login --username ${DOCKER_IO_USERNAME} --password-stdin
     - for i in $(find ./cmd/resources -name '*.go' -type f | sed 's|^./cmd/resources/||' | sed 's|.go$||'); do
         docker build --build-arg target=$i --tag gitzup/$i:${TRAVIS_COMMIT} --file ./build/Dockerfile .;
         docker push gitzup/$i:${TRAVIS_COMMIT}
