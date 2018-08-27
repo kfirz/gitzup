@@ -35,3 +35,6 @@ jobs:
         docker build --build-arg target=$i --tag gitzup/$i:${TRAVIS_COMMIT} --file ./build/Dockerfile .;
         docker push gitzup/$i:${TRAVIS_COMMIT};
       done
+
+after_script:
+- rm -fv /home/travis/.docker/config.json
