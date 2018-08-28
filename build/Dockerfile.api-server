@@ -4,12 +4,11 @@ RUN curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
 COPY ./Gopkg.lock ./Gopkg.toml ./
 RUN dep ensure -v -vendor-only
 COPY ./api ./api/
-COPY ./cmd ./cmd/
+COPY ./cmd/api-server ./cmd/api-server
 COPY ./internal ./internal/
 COPY ./web ./web/
 COPY ./Makefile ./
-ARG target
-RUN make ${target}
+RUN make api-server
 
 ########################################################################################################################
 # NOTES:
@@ -22,8 +21,5 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/* && \
     update-ca-certificates
 WORKDIR /app
-ARG target
-COPY --from=build /go/src/github.com/kfirz/gitzup/${target} .
-RUN ln -s /app/${target} /app/start && chmod +x /app/${target}
-ENTRYPOINT ["/app/start"]
-CMD ["--help"]
+COPY --from=build /go/src/github.com/kfirz/gitzup/api-server .
+ENTRYPOINT ["/app/api-server"]
