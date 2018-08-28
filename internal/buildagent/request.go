@@ -53,7 +53,7 @@ func NewBuildRequest(id string, b []byte) (*BuildRequest, error) {
 }
 
 func (request *BuildRequest) Apply() error {
-	log.Printf("Applying build request '%#v'", request)
+	log.Printf("Applying build request '%+v'", request)
 
 	for _, resource := range request.Resources {
 		err := resource.Initialize()

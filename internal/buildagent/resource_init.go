@@ -1,9 +1,12 @@
 package buildagent
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/filters"
+	"github.com/kfirz/gitzup/internal/protocol"
 	"golang.org/x/net/context"
 	"io"
 	"io/ioutil"
@@ -43,25 +46,32 @@ func (resource *Resource) Initialize() error {
 		return err
 	}
 
-	log.Printf("Pulling Docker image '%s'...", resource.Type)
-	reader, err := dockerClient.ImagePull(ctx, resource.Type, types.ImagePullOptions{
-		All: true,
-	})
-	defer reader.Close()
-	io.Copy(ioutil.Discard, reader)
+	// check if we already have this image
+	imageListArgs := filters.NewArgs()
+	imageListArgs.Add("reference", resource.Type)
+	// {"image.name":{"ubuntu":true},"label":{"label1=1":true,"label2=2":true}}
+	imageList, err := dockerClient.ImageList(ctx, types.ImageListOptions{Filters: imageListArgs})
 	if err != nil {
 		return err
+	}
+	if len(imageList) == 0 {
+		log.Printf("Pulling image '%s'...\n", resource.Type)
+		reader, err := dockerClient.ImagePull(ctx, resource.Type, types.ImagePullOptions{All: true})
+		defer reader.Close()
+		if io.Copy(ioutil.Discard, reader); err != nil {
+			return err
+		}
+	} else {
+		log.Printf("Image '%s' already present\n", resource.Type)
 	}
 
 	// create container
 	containerName := "init-" + resource.Name
-	log.Printf("Creating container '%s'...", containerName)
 	c, err := dockerClient.ContainerCreate(
 		ctx,
 		&container.Config{
 			Hostname:     resource.Name,
 			Domainname:   "gitzup.local",
-			Cmd:          []string{"echo", "Hello!"},
 			AttachStdin:  false,
 			AttachStdout: true,
 			AttachStderr: true,
@@ -86,13 +96,35 @@ func (resource *Resource) Initialize() error {
 	}()
 
 	// start container
-	log.Printf("Starting container '%s'...", c.ID)
 	if err := dockerClient.ContainerStart(ctx, c.ID, types.ContainerStartOptions{}); err != nil {
 		return err
 	}
 
+	// attach to container
+	resp, err := dockerClient.ContainerAttach(ctx, c.ID, types.ContainerAttachOptions{
+		Stream: true,
+		Stdin:  true,
+	})
+	if err != nil {
+		return err
+	}
+	defer resp.Close()
+
+	// send init request to the container's stdin
+	bytes, err := json.Marshal(protocol.InitRequest{
+		RequestId: resource.Request.Id,
+		Resource: protocol.InitRequestResourceInfo{
+			Type: resource.Type,
+			Name: resource.Name,
+		},
+	})
+	if err != nil {
+		return err
+	}
+	resp.Conn.Write(bytes)
+	resp.CloseWrite()
+
 	// stream logs to our stdout
-	log.Printf("Fetching logs for container '%s'...", c.ID)
 	out, err := dockerClient.ContainerLogs(ctx, c.ID, types.ContainerLogsOptions{
 		ShowStdout: true,
 		ShowStderr: true,
@@ -108,7 +140,6 @@ func (resource *Resource) Initialize() error {
 	// wait for container to finish
 	ctx30Sec, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
-	log.Printf("Waiting for container '%s' to exit... (timeout in 30 seconds)", c.ID)
 	if _, err := dockerClient.ContainerWait(ctx30Sec, c.ID); err != nil {
 		return err
 	}

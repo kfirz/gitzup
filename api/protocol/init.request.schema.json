@@ -5,18 +5,22 @@
     "type": "object",
     "additionalProperties": false,
     "required": [
-        "resource"
+        "requestId", "resource"
     ],
     "properties": {
+        "requestId": {
+            "type": "string",
+            "minLength": 1
+        },
         "resource": {
             "type": "object",
             "additionalProperties": false,
             "required": [
-                "id",
+                "name",
                 "type"
             ],
             "properties": {
-                "id": {
+                "name": {
                     "type": "string",
                     "pattern": "[a-z][-a-zA-Z0-9]+"
                 },

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/kfirz/gitzup/internal/protocol"
 	"github.com/kfirz/gitzup/internal/util"
 	"io"
 	"io/ioutil"
@@ -18,22 +19,13 @@ func init() {
 	protocolInitRequestSchema = schema
 }
 
-type InitRequestResourceInfo struct {
-	Id   string `json:"id"`
-	Type string `json:"type"`
-}
-
-type InitRequest struct {
-	Resource InitRequestResourceInfo `json:"resource"`
-}
-
-func NewInitRequest(input io.Reader) (*InitRequest, error) {
+func NewInitRequest(input io.Reader) (*protocol.InitRequest, error) {
 	inputBytes, err := ioutil.ReadAll(input)
 	if err != nil {
 		return nil, err
 	}
 
-	var req InitRequest
+	var req protocol.InitRequest
 	err = protocolInitRequestSchema.ParseAndValidate(&req, inputBytes)
 	if err != nil {
 		return nil, err
@@ -47,12 +39,13 @@ func PrintUsageAndExit() {
 }
 
 func main() {
+
 	// ignore first item which is the executable name itself
 	args := os.Args[1:]
 
 	// fail if no arguments given
 	if len(args) == 0 {
-		PrintUsageAndExit()
+		args = []string{"init"}
 	}
 
 	// command is the first item
@@ -68,7 +61,7 @@ func main() {
 			panic(err)
 			log.Fatalln(err.Error())
 		}
-		log.Printf("%#v\n", request)
+		log.Printf("%+v\n", request)
 
 	case "discover":
 		args := args[1:]
