@@ -62,5 +62,8 @@ func handleMessage(msg *pubsub.Message) {
 		panic(err)
 	}
 
-	request.Apply()
+	err = request.Apply()
+	if err != nil {
+		panic(err)
+	}
 }
