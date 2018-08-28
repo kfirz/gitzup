@@ -6,6 +6,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"golang.org/x/net/context"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"time"
@@ -28,26 +29,33 @@ func (resource *Resource) buildInitEnv() []string {
 
 func (resource *Resource) buildInitVolumes() map[string]struct{} {
 	return map[string]struct{}{
-		fmt.Sprintf("%s/cache:/tmp/gitzup/cache:rw", resource.Workspace()): struct{}{},
+		fmt.Sprintf("%s/cache:/tmp/gitzup/cache:rw", resource.Workspace()): {},
 	}
 }
 
 func (resource *Resource) Initialize() error {
-	log.Printf("Initializing resource '%s'...", resource)
+	log.Printf("Initializing resource '%s'...\n", resource.Name)
 	ctx := context.Background()
+	defer ctx.Done()
 
 	dockerClient, err := client.NewEnvClient()
 	if err != nil {
 		return err
 	}
 
-	reader, err := dockerClient.ImagePull(ctx, resource.Type, types.ImagePullOptions{})
+	log.Printf("Pulling Docker image '%s'...", resource.Type)
+	reader, err := dockerClient.ImagePull(ctx, resource.Type, types.ImagePullOptions{
+		All: true,
+	})
+	defer reader.Close()
+	io.Copy(ioutil.Discard, reader)
 	if err != nil {
 		return err
 	}
-	defer reader.Close()
 
 	// create container
+	containerName := "init-" + resource.Name
+	log.Printf("Creating container '%s'...", containerName)
 	c, err := dockerClient.ContainerCreate(
 		ctx,
 		&container.Config{
@@ -65,22 +73,26 @@ func (resource *Resource) Initialize() error {
 		},
 		&container.HostConfig{AutoRemove: false},
 		nil,
-		"init-"+resource.Name)
+		containerName)
 	if err != nil {
 		return err
 	}
-	defer dockerClient.ContainerRemove(ctx, c.ID, types.ContainerRemoveOptions{
-		RemoveVolumes: true,
-		RemoveLinks:   true,
-		Force:         true,
-	})
+	defer func() {
+		log.Printf("Removing container '%s'", c.ID)
+		err = dockerClient.ContainerRemove(ctx, c.ID, types.ContainerRemoveOptions{})
+		if err != nil {
+			log.Printf("Failed removing container '%s': %#v", c.ID, err)
+		}
+	}()
 
 	// start container
+	log.Printf("Starting container '%s'...", c.ID)
 	if err := dockerClient.ContainerStart(ctx, c.ID, types.ContainerStartOptions{}); err != nil {
 		return err
 	}
 
 	// stream logs to our stdout
+	log.Printf("Fetching logs for container '%s'...", c.ID)
 	out, err := dockerClient.ContainerLogs(ctx, c.ID, types.ContainerLogsOptions{
 		ShowStdout: true,
 		ShowStderr: true,
@@ -96,6 +108,7 @@ func (resource *Resource) Initialize() error {
 	// wait for container to finish
 	ctx30Sec, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
+	log.Printf("Waiting for container '%s' to exit... (timeout in 30 seconds)", c.ID)
 	if _, err := dockerClient.ContainerWait(ctx30Sec, c.ID); err != nil {
 		return err
 	}
