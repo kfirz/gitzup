@@ -52,3 +52,5 @@ webhooks-server: internal/assets/data.go $(INTERNAL_SRC) $(CMD_WEBHOOKS_SERVER_S
 .PHONY: test
 test: api-server buildagent webhooks-server $(CMD_RESOURCE_NAMES)
 	go test ./...
+
+# TODO: add golint
