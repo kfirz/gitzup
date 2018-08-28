@@ -1,7 +1,7 @@
 {
     "resources": {
         "test1": {
-            "type": "ubuntu",
+            "type": "gitzup/resource-gcp-project:dev",
             "config": {
                 "c": "d"
             }
