@@ -44,6 +44,7 @@ func NewBuildRequest(id string, b []byte) (*BuildRequest, error) {
 
 	// post-parsing updates
 	req.Id = id
+
 	for name, resource := range req.Resources {
 		resource.Name = name
 		resource.Request = req
@@ -55,11 +56,17 @@ func (request *BuildRequest) Apply() error {
 	log.Printf("Applying build request '%#v'", request)
 
 	for _, resource := range request.Resources {
-		resource.Initialize()
+		err := resource.Initialize()
+		if err != nil {
+			return err
+		}
 	}
 
 	for _, resource := range request.Resources {
-		resource.DiscoverState()
+		err := resource.DiscoverState()
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
