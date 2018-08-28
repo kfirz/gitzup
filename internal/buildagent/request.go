@@ -25,7 +25,7 @@ type Resource struct {
 
 type BuildRequest struct {
 	Id        string
-	Resources map[string]Resource `json:"resources"`
+	Resources map[string]*Resource `json:"resources"`
 }
 
 func (request *BuildRequest) WorkspacePath() string {
