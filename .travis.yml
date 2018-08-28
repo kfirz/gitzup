@@ -33,7 +33,9 @@ jobs:
     - echo -n "${DOCKER_IO_PASSWORD}" | docker login --username ${DOCKER_IO_USERNAME} --password-stdin
     - for i in $(find ./cmd/resources -name '*.go' -type f | sed 's|^./cmd/resources/||' | sed 's|.go$||'); do
         docker build --build-arg target=$i --tag gitzup/$i:${TRAVIS_COMMIT} --file ./build/Dockerfile .;
+        docker tag gitzup/$i:${TRAVIS_COMMIT} gitzup/$i:latest;
         docker push gitzup/$i:${TRAVIS_COMMIT};
+        docker push gitzup/$i:latest;
       done
 
 after_script:
