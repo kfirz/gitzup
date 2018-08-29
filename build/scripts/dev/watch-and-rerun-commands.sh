@@ -15,7 +15,7 @@ function watchAndInterrupt {
         if [[ ${RC} == 0 ]]; then
             pkill --parent $$ --exact ${TARGET}
         elif [[ ${RC} != 2 ]]; then
-            echo "File watcher failed! (${RC})" 2>&1 | ./build/scripts/colorize.sh ${COLOR} "  ${PREFIX}: "
+            echo "File watcher failed! (${RC})" 2>&1 | $(dirname $0)/../util/colorize.sh ${COLOR} "  ${PREFIX}: "
             exit 1
         fi
     done
@@ -30,11 +30,11 @@ trap stop EXIT
 watchAndInterrupt &
 
 while true; do
-    make ${TARGET} 2>&1 | ./build/scripts/colorize.sh ${COLOR} "  ${PREFIX}: "
+    make ${TARGET} 2>&1 | $(dirname $0)/../util/colorize.sh ${COLOR} "  ${PREFIX}: "
     if [[ $? == 0 ]]; then
-        GOOGLE_APPLICATION_CREDENTIALS=${JSON_KEY} ./${TARGET} 2>&1 | ./build/scripts/colorize.sh ${COLOR} "  ${PREFIX}: "
+        GOOGLE_APPLICATION_CREDENTIALS=${JSON_KEY} ./${TARGET} 2>&1 | $(dirname $0)/../util/colorize.sh ${COLOR} "  ${PREFIX}: "
     else
-        echo "Failed building ${TARGET}" 2>&1 | ./build/scripts/colorize.sh ${COLOR} "  ${PREFIX}: "
+        echo "Failed building ${TARGET}" 2>&1 | $(dirname $0)/../util/colorize.sh ${COLOR} "  ${PREFIX}: "
         exit 1
     fi
 done

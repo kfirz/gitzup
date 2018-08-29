@@ -12,7 +12,7 @@ function build {
                      --tag gitzup/${r}:dev \
                      --file \
                      ./build/Dockerfile.resource . 2>&1 \
-             | ./build/scripts/colorize.sh ${COLOR} "  ${PREFIX}: "
+             | $(dirname $0)/../util/colorize.sh ${COLOR} "  ${PREFIX}: "
     done
 }
 
