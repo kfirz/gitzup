@@ -16,13 +16,6 @@ func init() {
 	buildRequestSchema = schema
 }
 
-type Resource struct {
-	Request BuildRequest           `json:"-"`
-	Name    string                 `json:"name"`
-	Type    string                 `json:"type"`
-	Config  map[string]interface{} `json:"config"`
-}
-
 type BuildRequest struct {
 	Id        string
 	Resources map[string]*Resource `json:"resources"`
