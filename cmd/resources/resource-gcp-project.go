@@ -51,17 +51,20 @@ func main() {
 	// command is the first item
 	switch args[0] {
 	case "init":
-		args := args[1:]
-		if len(args) > 0 {
+		if args := args[1:]; len(args) > 0 {
 			PrintUsageAndExit()
 		}
 
 		request, err := NewInitRequest(os.Stdin)
 		if err != nil {
-			panic(err)
 			log.Fatalln(err.Error())
 		}
 		log.Printf("%+v\n", request)
+
+		os.MkdirAll("/gitzup", 0755)
+		if err := ioutil.WriteFile("/gitzup/output.json", []byte("{\"test\":1}"), 0644); err != nil {
+			log.Fatalln(err.Error())
+		}
 
 	case "discover":
 		args := args[1:]
