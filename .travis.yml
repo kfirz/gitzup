@@ -1,5 +1,4 @@
 sudo: required
-
 language: bash
 
 services:
@@ -15,16 +14,15 @@ cache:
     - "${HOME}/google-cloud-sdk"
 
 env:
-  - "PATH=${PATH}:${HOME}/google-cloud-sdk/bin"
+  - PATH=${PATH}:${HOME}/google-cloud-sdk/bin
 
 before_install:
+  - openssl aes-256-cbc -K $encrypted_f7e561a24207_key -iv $encrypted_f7e561a24207_iv -in .travis-ci-sa-key.json.enc -out .travis-ci-sa-key.json -d
   - "[[ -d ${HOME}/google-cloud-sdk ]] || curl https://sdk.cloud.google.com | bash"
 
 install:
   - echo -n "${DOCKER_IO_PASSWORD}" | docker login --username ${DOCKER_IO_USERNAME} --password-stdin
-  - echo -n "${GCP_SA_KEY}" > .gcp-sa-key.json
-  - ls -la .gcp-sa-key.json
-  - gcloud auth activate-service-account --key-file .gcp-sa-key.json
+  - gcloud auth activate-service-account --key-file .travis-ci-sa-key.json
   - gcloud auth configure-docker
 
 script:
