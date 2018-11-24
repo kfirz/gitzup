@@ -1,56 +1,71 @@
+AGENT_ASSET_FILES = $(shell find ./internal/agent/assets -type f ! -name '*.go')
+AGENT_ASSET_DIRS = $(shell find ./internal/agent/assets -type d)
+COMMON_ASSET_FILES = $(shell find ./internal/common/assets -type f ! -name '*.go')
+COMMON_ASSET_DIRS = $(shell find ./internal/common/assets -type d)
+GCP_ASSET_FILES = $(shell find ./internal/gcp/assets -type f ! -name '*.go')
+GCP_ASSET_DIRS = $(shell find ./internal/gcp/assets -type d)
 TAG ?= dev
 
-# capture all asset files & asset directories in variables
-# files list is used as a dependency list for the "assets" target; asset dirs are the arguments to "go-bindata"
-ASSET_FILES = $(shell find ./api -type f)
-ASSET_DIRS = $(shell find ./api -type d)
+.PHONY: build
+build: agent apiserver console gcp
 
-# capture source files for gitzup executables (used as dependency lists of Make targets)
-CMD_API_SERVER_SRC = $(shell find ./cmd/api-server -name '*.go' -type f)
-CMD_BUILDAGENT_SRC = $(shell find ./cmd/buildagent -name '*.go' -type f)
-CMD_RESOURCES_SRC = $(shell find ./cmd/resources -name '*.go' -type f)
-CMD_WEBHOOKS_SERVER_SRC = $(shell find ./cmd/webhooks-server -name '*.go' -type f)
-
-# manipulate the gitzup-resource executables source code file-names into generic resource names;
-# used to create a separate target per resource
-CMD_RESOURCE_NAMES = $(basename $(shell find ./cmd/resources -name '*.go' -type f | sed 's|^./cmd/resources/||'))
-
-# capture internal source code files (used as dependency lists of Make targets)
-INTERNAL_SRC = $(shell find ./internal -type f)
-
-# default target that builds all executables
-all: internal/assets/data.go api-server buildagent resources webhooks-server test
-
-# removes built executables
 .PHONY: clean
 clean:
-	rm -vf api-server buildagent $(CMD_RESOURCE_NAMES) webhooks-server
+	rm -vf agent apiserver console gcp
 
-# builds the embedded assets file
-internal/assets/data.go: $(ASSET_FILES)
-	$(GOPATH)/bin/go-bindata -o ./internal/assets/data.go -pkg assets -prefix api/ $(ASSET_DIRS)
+internal/agent/assets/assets.go: $(AGENT_ASSET_FILES)
+	go-bindata -o internal/agent/assets/assets.go -pkg assets $(AGENT_ASSET_DIRS)
 
-# builds the API server executable
-api-server: internal/assets/data.go $(INTERNAL_SRC) $(CMD_API_SERVER_SRC)
-	go build -o api-server ./cmd/api-server/
+internal/common/assets/assets.go: $(COMMON_ASSET_FILES)
+	go-bindata -o internal/common/assets/assets.go -pkg assets $(COMMON_ASSET_DIRS)
 
-# builds the build agent executable
-buildagent: internal/assets/data.go $(INTERNAL_SRC) $(CMD_BUILDAGENT_SRC)
-	go build -o buildagent ./cmd/buildagent/
-
-# builds each of the gitzup resources
-$(CMD_RESOURCE_NAMES): internal/assets/data.go $(INTERNAL_SRC) $(CMD_RESOURCES_SRC)
-	go build -o $@ ./cmd/resources/$@.go
-
-.PHONY: resources
-resources: $(CMD_RESOURCE_NAMES)
-
-# builds the webhooks server executable
-webhooks-server: internal/assets/data.go $(INTERNAL_SRC) $(CMD_WEBHOOKS_SERVER_SRC)
-	go build -o webhooks-server ./cmd/webhooks-server/
-
-.PHONY: test
-test: api-server buildagent webhooks-server $(CMD_RESOURCE_NAMES)
-	go test ./...
+internal/gcp/assets/assets.go: $(GCP_ASSET_FILES)
+	go-bindata -o internal/gcp/assets/assets.go -pkg assets $(GCP_ASSET_DIRS)
 
 # TODO: add golint
+
+agent: ./cmd/agent/main.go $(SRC) internal/agent/assets/assets.go internal/common/assets/assets.go
+	go build -o agent ./cmd/agent/main.go
+
+apiserver: ./cmd/apiserver/main.go $(SRC) internal/common/assets/assets.go
+	go build -o apiserver ./cmd/apiserver/main.go
+
+console: ./cmd/console/main.go $(SRC) internal/common/assets/assets.go
+	go build -o console ./cmd/console/main.go
+
+gcp: ./cmd/gcp/main.go $(SRC) internal/gcp/assets/assets.go internal/common/assets/assets.go
+	go build -o gcp ./cmd/gcp/main.go
+
+.PHONY: test
+test: build
+	go test ./...
+
+.PHONY: docker
+docker:
+	docker build -t gitzup/agent:$(TAG) -f ./build/Dockerfile --target agent .
+	docker build -t gitzup/apiserver:$(TAG) -f ./build/Dockerfile --target apiserver .
+	docker build -t gitzup/console:$(TAG) -f ./build/Dockerfile --target console .
+	docker build -t gitzup/gcp:$(TAG) -f ./build/Dockerfile --target gcp .
+	docker build -t gitzup/gcp-project:$(TAG) -f ./build/Dockerfile --target gcp-project .
+	[[ "${PUSH}" == "true" ]] && \
+		docker push gitzup/agent:$(TAG) && \
+		docker push gitzup/apiserver:$(TAG) && \
+		docker push gitzup/console:$(TAG) && \
+		docker push gitzup/gcp:$(TAG) && \
+		docker push gitzup/gcp-project:$(TAG) \
+	|| true
+
+.PHONY: latest
+latest: docker
+	docker tag gitzup/agent:$(TAG) gitzup/agent:latest
+	docker tag gitzup/apiserver:$(TAG) gitzup/apiserver:latest
+	docker tag gitzup/console:$(TAG) gitzup/console:latest
+	docker tag gitzup/gcp:$(TAG) gitzup/gcp:latest
+	docker tag gitzup/gcp-project:$(TAG) gitzup/gcp-project:latest
+	[[ "${PUSH}" == "true" ]] && \
+		docker push gitzup/agent:latest && \
+		docker push gitzup/apiserver:latest && \
+		docker push gitzup/console:latest && \
+		docker push gitzup/gcp:latest && \
+		docker push gitzup/gcp-project:latest \
+	|| true

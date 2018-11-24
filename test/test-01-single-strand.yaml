@@ -1,5 +1,0 @@
-version: 1
-strands:
-- name: strand1
-  steps:
-  - name: step1

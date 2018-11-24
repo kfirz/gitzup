@@ -13,17 +13,8 @@ addons:
 before_script:
   - echo -n "${DOCKER_IO_PASSWORD}" | docker login --username ${DOCKER_IO_USERNAME} --password-stdin
 
-jobs:
-  include:
-  - stage: Docker
-    name: API Server
-    script: ./build/scripts/build-command.sh api-server ${TRAVIS_COMMIT}
-  - name: Build Agent
-    script: ./build/scripts/build-command.sh buildagent ${TRAVIS_COMMIT}
-  - name: Webhooks Server
-    script: ./build/scripts/build-command.sh webhooks-server ${TRAVIS_COMMIT}
-  - name: Resources
-    script: ./build/scripts/build-resources.sh ${TRAVIS_COMMIT}
+script:
+- bash .travis.build.sh
 
 after_script:
 - rm -fv /home/travis/.docker/config.json

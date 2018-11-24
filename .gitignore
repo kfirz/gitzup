@@ -1,9 +1,11 @@
 # Binaries for programs and plugins
-*.so
-/buildagent
-/api-server
-/resource-*
-/webhooks-server
+/agent
+/apiserver
+/console
+/gcp
+
+# Build temporary files
+/Gitzup__*
 
 # Test binary, build with `go test -c`
 *.test
