@@ -23,7 +23,7 @@ before_install:
 install:
   - echo -n "${DOCKER_IO_PASSWORD}" | docker login --username ${DOCKER_IO_USERNAME} --password-stdin
   - echo -n "${GCP_SA_KEY}" > .gcp-sa-key.json
-  - cat .gcp-sa-key.json
+  - ls -la .gcp-sa-key.json
   - gcloud auth activate-service-account --key-file .gcp-sa-key.json
   - gcloud auth configure-docker
 
