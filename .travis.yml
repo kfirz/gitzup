@@ -24,6 +24,7 @@ before_install:
 install:
   - echo -n "${DOCKER_IO_PASSWORD}" | docker login --username ${DOCKER_IO_USERNAME} --password-stdin
   - gcloud auth activate-service-account --key-file .travis-ci-sa-key.json
+  - gcloud info
   - gcloud auth configure-docker
 
 script:
