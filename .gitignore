@@ -18,3 +18,4 @@
 
 # Local files
 /*.local.*
+/.travis-ci-sa-key.json
