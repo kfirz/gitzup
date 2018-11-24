@@ -4,6 +4,7 @@ COMMON_ASSET_FILES = $(shell find ./internal/common/assets -type f ! -name '*.go
 COMMON_ASSET_DIRS = $(shell find ./internal/common/assets -type d)
 GCP_ASSET_FILES = $(shell find ./internal/gcp/assets -type f ! -name '*.go')
 GCP_ASSET_DIRS = $(shell find ./internal/gcp/assets -type d)
+REPO ?= gitzup
 TAG ?= dev
 
 .PHONY: build
@@ -42,30 +43,30 @@ test: build
 
 .PHONY: docker
 docker:
-	docker build -t gitzup/agent:$(TAG) -f ./build/Dockerfile --target agent .
-	docker build -t gitzup/apiserver:$(TAG) -f ./build/Dockerfile --target apiserver .
-	docker build -t gitzup/console:$(TAG) -f ./build/Dockerfile --target console .
-	docker build -t gitzup/gcp:$(TAG) -f ./build/Dockerfile --target gcp .
-	docker build -t gitzup/gcp-project:$(TAG) -f ./build/Dockerfile --target gcp-project .
+	docker build -t $(REPO)/agent:$(TAG) -f ./build/Dockerfile --target agent .
+	docker build -t $(REPO)/apiserver:$(TAG) -f ./build/Dockerfile --target apiserver .
+	docker build -t $(REPO)/console:$(TAG) -f ./build/Dockerfile --target console .
+	docker build -t $(REPO)/gcp:$(TAG) -f ./build/Dockerfile --target gcp .
+	docker build -t $(REPO)/gcp-project:$(TAG) -f ./build/Dockerfile --target gcp-project .
 	[[ "${PUSH}" == "true" ]] && \
-		docker push gitzup/agent:$(TAG) && \
-		docker push gitzup/apiserver:$(TAG) && \
-		docker push gitzup/console:$(TAG) && \
-		docker push gitzup/gcp:$(TAG) && \
-		docker push gitzup/gcp-project:$(TAG) \
+		docker push $(REPO)/agent:$(TAG) && \
+		docker push $(REPO)/apiserver:$(TAG) && \
+		docker push $(REPO)/console:$(TAG) && \
+		docker push $(REPO)/gcp:$(TAG) && \
+		docker push $(REPO)/gcp-project:$(TAG) \
 	|| true
 
 .PHONY: latest
 latest: docker
-	docker tag gitzup/agent:$(TAG) gitzup/agent:latest
-	docker tag gitzup/apiserver:$(TAG) gitzup/apiserver:latest
-	docker tag gitzup/console:$(TAG) gitzup/console:latest
-	docker tag gitzup/gcp:$(TAG) gitzup/gcp:latest
-	docker tag gitzup/gcp-project:$(TAG) gitzup/gcp-project:latest
+	docker tag $(REPO)/agent:$(TAG) $(REPO)/agent:latest
+	docker tag $(REPO)/apiserver:$(TAG) $(REPO)/apiserver:latest
+	docker tag $(REPO)/console:$(TAG) $(REPO)/console:latest
+	docker tag $(REPO)/gcp:$(TAG) $(REPO)/gcp:latest
+	docker tag $(REPO)/gcp-project:$(TAG) $(REPO)/gcp-project:latest
 	[[ "${PUSH}" == "true" ]] && \
-		docker push gitzup/agent:latest && \
-		docker push gitzup/apiserver:latest && \
-		docker push gitzup/console:latest && \
-		docker push gitzup/gcp:latest && \
-		docker push gitzup/gcp-project:latest \
+		docker push $(REPO)/agent:latest && \
+		docker push $(REPO)/apiserver:latest && \
+		docker push $(REPO)/console:latest && \
+		docker push $(REPO)/gcp:latest && \
+		docker push $(REPO)/gcp-project:latest \
 	|| true
