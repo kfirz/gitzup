@@ -16,10 +16,13 @@ cache:
 
 env:
   - PATH=${PATH}:${HOME}/google-cloud-sdk/bin
+  - GCLOUD_SDK_URL="https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-225.0.0-linux-x86_64.tar.gz"
 
 before_install:
+  - pwd
+  - echo $HOME
   - openssl aes-256-cbc -K $encrypted_f7e561a24207_key -iv $encrypted_f7e561a24207_iv -in .travis-ci-sa-key.json.enc -out .travis-ci-sa-key.json -d
-  - "[[ -d ${HOME}/google-cloud-sdk ]] || curl https://sdk.cloud.google.com | bash"
+  - "[[ -d ${HOME}/google-cloud-sdk ]] || (curl -L ${GCLOUD_SDK_URL} | tar xzf -)"
 
 install:
   - echo -n "${DOCKER_IO_PASSWORD}" | docker login --username ${DOCKER_IO_USERNAME} --password-stdin
