@@ -15,8 +15,7 @@ cache:
     - "${HOME}/google-cloud-sdk"
 
 env:
-  - PATH=${PATH}:${HOME}/google-cloud-sdk/bin
-  - GCLOUD_SDK_URL="https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-225.0.0-linux-x86_64.tar.gz"
+  - PATH=${PATH}:${HOME}/google-cloud-sdk/bin GCLOUD_SDK_URL="https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-225.0.0-linux-x86_64.tar.gz"
 
 before_install:
   - pwd
