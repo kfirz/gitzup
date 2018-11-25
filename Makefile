@@ -48,13 +48,14 @@ docker:
 	docker build -t $(REPO)/console:$(TAG) -f ./build/Dockerfile --target console .
 	docker build -t $(REPO)/gcp:$(TAG) -f ./build/Dockerfile --target gcp .
 	docker build -t $(REPO)/gcp-project:$(TAG) -f ./build/Dockerfile --target gcp-project .
-	[[ "${PUSH}" == "true" ]] && \
-		docker push $(REPO)/agent:$(TAG) && \
-		docker push $(REPO)/apiserver:$(TAG) && \
-		docker push $(REPO)/console:$(TAG) && \
-		docker push $(REPO)/gcp:$(TAG) && \
-		docker push $(REPO)/gcp-project:$(TAG) \
-	|| true
+
+.PHONY: push-docker
+push-docker: docker
+	docker push $(REPO)/agent:$(TAG)
+	docker push $(REPO)/apiserver:$(TAG)
+	docker push $(REPO)/console:$(TAG)
+	docker push $(REPO)/gcp:$(TAG)
+	docker push $(REPO)/gcp-project:$(TAG)
 
 .PHONY: latest
 latest: docker
@@ -63,10 +64,11 @@ latest: docker
 	docker tag $(REPO)/console:$(TAG) $(REPO)/console:latest
 	docker tag $(REPO)/gcp:$(TAG) $(REPO)/gcp:latest
 	docker tag $(REPO)/gcp-project:$(TAG) $(REPO)/gcp-project:latest
-	[[ "${PUSH}" == "true" ]] && \
-		docker push $(REPO)/agent:latest && \
-		docker push $(REPO)/apiserver:latest && \
-		docker push $(REPO)/console:latest && \
-		docker push $(REPO)/gcp:latest && \
-		docker push $(REPO)/gcp-project:latest \
-	|| true
+
+.PHONY: push-latest
+push-latest: latest
+	docker push $(REPO)/agent:latest
+	docker push $(REPO)/apiserver:latest
+	docker push $(REPO)/console:latest
+	docker push $(REPO)/gcp:latest
+	docker push $(REPO)/gcp-project:latest
