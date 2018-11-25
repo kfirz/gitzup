@@ -23,6 +23,8 @@ before_install:
 
 install:
   - echo -n "${DOCKER_IO_PASSWORD}" | docker login --username ${DOCKER_IO_USERNAME} --password-stdin
+  - which gcloud
+  - ls -l ${HOME}/google-cloud-sdk/bin/gcloud
   - gcloud auth activate-service-account --key-file .travis-ci-sa-key.json
   - gcloud info
   - gcloud auth configure-docker
