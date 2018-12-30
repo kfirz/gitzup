@@ -1,0 +1,62 @@
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  creationTimestamp: null
+  labels:
+    controller-tools.k8s.io: "1.0"
+  name: dnszones.gcp.gitzup.com
+spec:
+  additionalPrinterColumns:
+  - JSONPath: .spec.ProjectId
+    description: Project ID
+    name: Project ID
+    type: string
+  - JSONPath: .status.Id
+    description: Cloud DNS Zone ID
+    name: ID
+    type: string
+  - JSONPath: .spec.DnsName
+    description: DNS
+    name: DNS
+    type: string
+  group: gcp.gitzup.com
+  names:
+    kind: DnsZone
+    plural: dnszones
+  scope: Namespaced
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      properties:
+        apiVersion:
+          type: string
+        kind:
+          type: string
+        metadata:
+          type: object
+        spec:
+          properties:
+            dnsName:
+              pattern: '[^.]+\.[^.]+\.'
+              type: string
+            projectId:
+              pattern: '[a-z][a-z0-9-]{4,28}[a-z0-9]'
+              type: string
+          required:
+          - projectId
+          - dnsName
+          type: object
+        status:
+          properties:
+            Id:
+              format: int64
+              type: integer
+          type: object
+  version: v1beta1
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []

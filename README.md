@@ -7,9 +7,39 @@
 
 Gitzup is an opinionated DevOps platform for managing all development aspects, from infrastructure, through coding, to deployment.
 
+## TODO
+
+[ ] Plugin support for custom resources
+[ ] Metrics & alerts
+[ ] Background thread interval should be one minute
+[ ] Background thread should support back-off pressure
+
 ## Installation
 
 TBD.
+
+## Development
+
+#### Build session:
+
+```bash
+$ eval $(minikube docker-env)
+$ export V="$(cat .version)"; echo -n "$((V + 1))">.version; make docker-build IMG=gitzup-controller:0.0.0-${V} && make deploy
+$ kubectl delete ipaddress/test1 -n default
+$ kubectl apply -f ./config/samples/gcp_v1beta1_ipaddress.yaml
+```
+
+#### Progress session
+
+```bash
+$ kubectl logs -n gitzup-system gitzup-controller-manager-0 -f | jq -c
+```
+
+#### Monitor session
+
+```bash
+$ kubectl describe ipaddress/test1 -n default
+```
 
 ## Usage
 

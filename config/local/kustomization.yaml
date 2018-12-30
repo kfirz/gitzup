@@ -1,0 +1,13 @@
+namespace: gitzup
+
+bases:
+  - ../default
+
+secretGenerator:
+  - name: gcp-secret
+    type: Opaque
+    commands:
+      serviceaccount-key.json: "cat ../../gitzup-deployment-36092853e835.local.json"
+
+generatorOptions:
+  disableNameSuffixHash: true

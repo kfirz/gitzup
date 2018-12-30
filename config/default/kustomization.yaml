@@ -1,0 +1,19 @@
+namespace: gitzup
+
+resources:
+- ../rbac/rbac_role.yaml
+- ../rbac/rbac_role_binding.yaml
+- ../manager/manager.yaml
+
+patches:
+- manager_image_patch.yaml
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+vars:
+- name: WEBHOOK_SECRET_NAME
+  objref:
+    kind: Secret
+    name: webhook-server-secret
+    apiVersion: v1

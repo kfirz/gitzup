@@ -1,0 +1,10 @@
+apiVersion: gcp.gitzup.com/v1beta1
+kind: IpAddress
+metadata:
+  namespace: default
+  name: sample-ip
+spec:
+  projectId: gitzup
+  networkTier: STANDARD
+  ipVersion: IPV4
+  region: europe-west1

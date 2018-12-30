@@ -1,0 +1,8 @@
+apiVersion: gcp.gitzup.com/v1beta1
+kind: DnsZone
+metadata:
+  namespace: default
+  name: randomly194756-com
+spec:
+  projectId: gitzup
+  dnsName: randomly194756.com.

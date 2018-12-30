@@ -1,0 +1,44 @@
+timeout: 300s
+
+steps:
+
+  # Decrypt thje GitHub access token
+  - id: decrypt-github-access-token
+    name: gcr.io/cloud-builders/gcloud
+    args: [kms, decrypt,
+           --ciphertext-file=./github-access-token.enc,
+           --plaintext-file=./github-access-token,
+           --location=global,
+           --keyring=cloudbuild-keyring,
+           --key=serviceaccount-keys-key]
+    waitFor: ['-']
+
+  # Re-tag SHA image with the Git tag name
+  - id: pull-sha-image
+    name: gcr.io/cloud-builders/docker
+    args: ["pull", "gcr.io/${PROJECT_ID}/gitzup-manager:${SHORT_SHA}"]
+  - id: tag-image
+    name: gcr.io/cloud-builders/docker
+    args: ["tag", "gcr.io/${PROJECT_ID}/gitzup-manager:${SHORT_SHA}", "gcr.io/${PROJECT_ID}/gitzup-manager:${TAG_NAME}"]
+
+  # Create a Kustomize patch that updates the image for the gitzup manager pod
+  - id: kustomize-patch
+    name: ubuntu:18.10
+    args: ["./build/create_kustomize_patches.sh", "gcr.io/${PROJECT_ID}/gitzup-manager:${TAG_NAME}"]
+    waitFor: ['-']
+
+  # Run Kustomize
+  - id: kustomize
+    name: gcr.io/${PROJECT_ID}/kustomize
+    entrypoint: bash
+    args: ["-c","./build/create_manifest.sh > ./gitzup.yaml"]
+    waitFor: ["kustomize-patch"]
+
+  # Update the GitHub release with our manifest
+  - id: create-github-release
+    name: gcr.io/${PROJECT_ID}/bash-curl-jq
+    args: ["./build/create_github_release.sh"]
+    env: ["PROJECT_ID=${PROJECT_ID}","TAG_NAME=${TAG_NAME}","COMMIT_SHA=${COMMIT_SHA}"]
+    waitFor: ["kustomize","decrypt-github-access-token"]
+
+images: ["gcr.io/${PROJECT_ID}/gitzup-manager:${TAG_NAME}"]
