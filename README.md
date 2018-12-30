@@ -22,10 +22,26 @@ TBD.
  
 ## Roadmap / TODOs
 
-[ ] Plugin support for custom resources
-[ ] Metrics & alerts
-[ ] Background thread interval should be one minute
-[ ] Background thread should support back-off pressure
+### Features
+
+[ ] Plugin support
+[ ] Metrics
+[ ] Background thread scalability (support exponential back-off pressure per resource)
+
+### Resources
+
+#### Google Cloud Platform
+
+[ ] VPC Firewall Rules
+[ ] Cloud DNS Records
+[ ] BigTable Instances
+[ ] Datastore & Firestore Instances
+[ ] Cloud SQL Instances
+[ ] Spanner Instances
+[ ] Memorystore Instances
+[ ] Filestore Instances
+[ ] BigQuery datasets
+[ ] Pub/Sub Topics & Subscriptions
 
 ## Development
 
