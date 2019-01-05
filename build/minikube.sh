@@ -2,37 +2,28 @@
 
 set -eu -o pipefail
 
-# Read current local version, defaulting to 1
+echo "---> CHECKING MINIKUBE IS UP & RUNNING"
+minikube status
+echo
+
+echo -n "---> TARGET IMAGE NAME: "
 VERSION="1"
 if [[ -f .version ]]; then
     VERSION="$(cat .version)"
 fi
-
-# Increment and save back
 VERSION="$((VERSION + 1))"
 echo -n "${VERSION}" > .version
 IMAGE="gitzup-manager:${VERSION}"
+echo "${IMAGE}"
 
-# Switch context to Minikube
+echo "---> SWITCHING DOCKER HOST TO MINIKUBE"
 eval $(minikube docker-env)
 
-# Build image
+echo "---> BUILDING DOCKER IMAGE"
 docker build . -t ${IMAGE} -f ./build/Dockerfile
 
-# Create a patch
-cat > ./config/default/manager_image_patch.yaml <<EOF
-apiVersion: apps/v1
-kind: StatefulSet
-metadata:
-  name: controller-manager
-  namespace: gitzup
-spec:
-  template:
-    spec:
-      containers:
-      - name: manager
-        image: ${IMAGE}
-EOF
+echo "---> SAVING IMAGE IN Kustomize PATCH"
+source $(cd $(dirname $0); pwd)/create_kustomize_patches.sh ${IMAGE}
 
-# Deploy
-./build/create_manifest.sh local | kubectl apply -f -
+echo "---> DEPLOYING TO CLUSTER"
+./build/manifest.sh local | kubectl apply -f -

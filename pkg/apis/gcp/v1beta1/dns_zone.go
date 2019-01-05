@@ -20,6 +20,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+type DnsRecord struct {
+	Type    string   `json:"type"`
+	DnsName string   `json:"dnsName"`
+	Ttl     int64    `json:"ttl"`
+	Rrdatas []string `json:"rrdatas"`
+}
+
 // GoogleCloudDnsZoneSpec defines the desired state of GoogleCloudDnsZone
 type DnsZoneSpec struct {
 
@@ -28,6 +35,8 @@ type DnsZoneSpec struct {
 
 	// +kubebuilder:validation:Pattern=[^.]+\.[^.]+\.
 	DnsName string `json:"dnsName"`
+
+	Records []DnsRecord `json:"records"`
 }
 
 // GoogleCloudDnsZoneStatus defines the observed state of GoogleCloudDnsZone

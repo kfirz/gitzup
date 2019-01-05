@@ -78,7 +78,7 @@ spec:
       - name: gcp-secret
         secret:
           secretName: gcp-secret
-          optional: false
+          optional: true
 ---
 apiVersion: v1
 kind: Secret

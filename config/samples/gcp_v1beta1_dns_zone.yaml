@@ -6,3 +6,14 @@ metadata:
 spec:
   projectId: gitzup
   dnsName: randomly194756.com.
+  records:
+    - type: A
+      dnsName: a.randomly194756.com.
+      ttl: 60
+      rrdatas:
+        - "35.206.201.152"
+    - type: CNAME
+      dnsName: cname.randomly194756.com.
+      ttl: 600
+      rrdatas:
+        - a.randomly194756.com.

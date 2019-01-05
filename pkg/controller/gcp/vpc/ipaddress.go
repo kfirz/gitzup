@@ -33,10 +33,19 @@ func AddIpAddress(mgr manager.Manager) error {
 
 // Adapter for working with GCP reserved IP addresses.
 type ResourceAdapter struct {
+	r *reconciler.Reconciler
 }
 
 // Ensure our resource adapter struct implements the reconcile.ResourceAdapter interface
 var _ reconciler.ObjectAdapter = &ResourceAdapter{}
+
+func (a *ResourceAdapter) IsCleanupOnDeletion() bool {
+	return true
+}
+
+func (a *ResourceAdapter) Inject(r *reconciler.Reconciler) {
+	a.r = r
+}
 
 func (a *ResourceAdapter) CreateObject() interface{} {
 	return &v1beta1.IpAddress{}

@@ -21,5 +21,8 @@ test: generate fmt vet manifests
 manager: generate fmt vet
 	go build -o bin/manager github.com/kfirz/gitzup/cmd/manager
 
+deploy-crds: manifests
+	./build/manifest_crds.sh | kubectl apply -f -
+
 minikube: generate fmt vet manifests
 	./build/minikube.sh

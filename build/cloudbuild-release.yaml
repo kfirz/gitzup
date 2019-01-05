@@ -31,7 +31,7 @@ steps:
   - id: kustomize
     name: gcr.io/${PROJECT_ID}/kustomize
     entrypoint: bash
-    args: ["-c","./build/create_manifest.sh > ./gitzup.yaml"]
+    args: ["-c","./build/manifest.sh > ./gitzup.yaml"]
     waitFor: ["kustomize-patch"]
 
   # Update the GitHub release with our manifest

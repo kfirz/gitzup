@@ -52,7 +52,7 @@ func WaitForComputeOperation(projectId string, op *compute.Operation) error {
 			resp, err := svc.ZoneOperations.Get(projectId, zone, op.Name).Do()
 			if err != nil {
 				return errors.Wrapf(err, "failed getting zonal operation status")
-			} else if resp.Status == "DONE" {
+			} else if strings.ToLower(resp.Status) == "done" {
 				if resp.Error != nil {
 					return errors.Errorf("zonal operation failed: %+v", resp.Error)
 				}
@@ -66,7 +66,7 @@ func WaitForComputeOperation(projectId string, op *compute.Operation) error {
 			resp, err := svc.RegionOperations.Get(projectId, region, op.Name).Do()
 			if err != nil {
 				return errors.Wrapf(err, "failed getting regional operation status")
-			} else if resp.Status == "DONE" {
+			} else if strings.ToLower(resp.Status) == "done" {
 				if resp.Error != nil {
 					return errors.Errorf("regional operation failed: %+v", resp.Error)
 				}
@@ -78,7 +78,7 @@ func WaitForComputeOperation(projectId string, op *compute.Operation) error {
 			resp, err := svc.GlobalOperations.Get(projectId, op.Name).Do()
 			if err != nil {
 				return errors.Wrapf(err, "failed getting global operation status")
-			} else if resp.Status == "DONE" {
+			} else if strings.ToLower(resp.Status) == "done" {
 				if resp.Error != nil {
 					return errors.Errorf("global operation failed: %+v", resp.Error)
 				}
@@ -98,7 +98,7 @@ func WaitForDnsOperation(projectId string, op *dns.Operation) error {
 		resp, err := svc.ManagedZoneOperations.Get(projectId, op.ZoneContext.OldValue.Name, op.Id).Do()
 		if err != nil {
 			return errors.Wrapf(err, "failed getting DNS operation status")
-		} else if resp.Status == "DONE" {
+		} else if strings.ToLower(resp.Status) == "done" {
 			return nil
 		}
 	}

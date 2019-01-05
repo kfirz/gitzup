@@ -32,6 +32,8 @@ var (
 
 // Adapts a Kubernetes object to an external resource (eg. a GCP or AWS machine, IP address, etc)
 type ObjectAdapter interface {
+	Inject(reconciler *Reconciler)
+	IsCleanupOnDeletion() bool
 	CreateObject() interface{}
 	CreateList() interface{}
 	GetListItems(list interface{}) ([]interface{}, error)
@@ -64,7 +66,7 @@ type Reconciler struct {
 var _ reconcile.Reconciler = &Reconciler{}
 
 func New(name string, mgr manager.Manager, adapter ObjectAdapter) *Reconciler {
-	return &Reconciler{
+	r := &Reconciler{
 		Name:                       name,
 		Manager:                    mgr,
 		Client:                     mgr.GetClient(),
@@ -76,6 +78,8 @@ func New(name string, mgr manager.Manager, adapter ObjectAdapter) *Reconciler {
 		externalReconcileChan:      make(chan event.GenericEvent),
 		closeExternalReconcileChan: make(chan struct{}),
 	}
+	adapter.Inject(r)
+	return r
 }
 
 func (r *Reconciler) WarnEvent(obj runtime.Object, reason string, msg string, msgArgs ...interface{}) {
@@ -122,7 +126,7 @@ func (r *Reconciler) Reconcile(request reconcile.Request) (reconcile.Result, err
 	if !objectMeta.GetDeletionTimestamp().IsZero() {
 
 		// if our finalizer hasn't been executed yet, run it now and remove it from the finalizers list
-		if util.ContainsString(objectMeta.GetFinalizers(), finalizerName) {
+		if adapter.IsCleanupOnDeletion() && util.ContainsString(objectMeta.GetFinalizers(), finalizerName) {
 
 			// Discover whether the resource exists
 			res, err := adapter.RetrieveResource(object)
@@ -139,13 +143,13 @@ func (r *Reconciler) Reconcile(request reconcile.Request) (reconcile.Result, err
 				}
 				r.InfoEvent(runtimeObject, "ExternalResourceDeleted", "Deleted external resource")
 			}
+		}
 
-			// remove our finalizer from the list and update it.
-			objectMeta.SetFinalizers(util.RemoveString(objectMeta.GetFinalizers(), finalizerName))
-			if err := mgrClient.Update(ctx, runtimeObject); err != nil {
-				r.WarnEvent(runtimeObject, "ObjectUpdateError", "Could not remove object finalizer")
-				return reconcile.Result{}, errors.Wrapf(err, "could not remove finalizer")
-			}
+		// remove our finalizer from the list and update it.
+		objectMeta.SetFinalizers(util.RemoveString(objectMeta.GetFinalizers(), finalizerName))
+		if err := mgrClient.Update(ctx, runtimeObject); err != nil {
+			r.WarnEvent(runtimeObject, "ObjectUpdateError", "Could not remove object finalizer")
+			return reconcile.Result{}, errors.Wrapf(err, "could not remove finalizer")
 		}
 
 		// All done
@@ -245,9 +249,8 @@ func (r *Reconciler) Reconcile(request reconcile.Request) (reconcile.Result, err
 }
 
 func (r *Reconciler) Start() error {
-
 	// Create a new controller
-	c, err := controller.New(r.Name+"-controller", r.Manager, controller.Options{Reconciler: r})
+	c, err := controller.New(r.Name + "-controller", r.Manager, controller.Options{Reconciler: r})
 	if err != nil {
 		return errors.Wrapf(err, "failed creating controller for '%s' reconciler", r.Name)
 	}

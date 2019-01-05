@@ -43,9 +43,31 @@ spec:
             projectId:
               pattern: '[a-z][a-z0-9-]{4,28}[a-z0-9]'
               type: string
+            records:
+              items:
+                properties:
+                  dnsName:
+                    type: string
+                  rrdatas:
+                    items:
+                      type: string
+                    type: array
+                  ttl:
+                    format: int64
+                    type: integer
+                  type:
+                    type: string
+                required:
+                - type
+                - dnsName
+                - ttl
+                - rrdatas
+                type: object
+              type: array
           required:
           - projectId
           - dnsName
+          - records
           type: object
         status:
           properties:

@@ -17,7 +17,6 @@ limitations under the License.
 package main
 
 import (
-	"io/ioutil"
 	"os"
 
 	"github.com/kfirz/gitzup/pkg/apis"
@@ -34,16 +33,8 @@ func main() {
 	logf.SetLogger(logf.ZapLogger(false))
 	log := logf.Log.WithName("entrypoint")
 
-	// Print GCP service account
-	if serviceAccount, err := ioutil.ReadFile(os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")); err != nil {
-		log.Error(err, "could not read GCP service account file", "file", os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"))
-		os.Exit(1)
-	} else {
-		log.Info("GCP service account", "content", string(serviceAccount))
-	}
-
 	// Get a config to talk to the apiserver
-	log.Info("setting up client for manager")
+	log.Info("Creating client")
 	cfg, err := config.GetConfig()
 	if err != nil {
 		log.Error(err, "unable to set up client config")
@@ -51,17 +42,15 @@ func main() {
 	}
 
 	// Create a new Cmd to provide shared dependencies and start components
-	log.Info("setting up manager")
+	log.Info("Creating manager")
 	mgr, err := manager.New(cfg, manager.Options{})
 	if err != nil {
 		log.Error(err, "unable to set up overall controller manager")
 		os.Exit(1)
 	}
 
-	log.Info("Registering Components.")
-
 	// Setup Scheme for all resources
-	log.Info("setting up scheme")
+	log.Info("Setting up scheme")
 	if err := apis.AddToScheme(mgr.GetScheme()); err != nil {
 		log.Error(err, "unable add APIs to scheme")
 		os.Exit(1)
@@ -74,14 +63,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	log.Info("setting up webhooks")
+	log.Info("Setting up webhooks")
 	if err := webhook.AddToManager(mgr); err != nil {
 		log.Error(err, "unable to register webhooks to the manager")
 		os.Exit(1)
 	}
 
 	// Start the Cmd
-	log.Info("Starting the Cmd.")
+	log.Info("Starting")
 	if err := mgr.Start(signals.SetupSignalHandler()); err != nil {
 		log.Error(err, "unable to run the manager")
 		os.Exit(1)
