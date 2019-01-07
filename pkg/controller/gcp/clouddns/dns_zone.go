@@ -14,7 +14,14 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"net/http"
 	"reflect"
+	"regexp"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+)
+
+var (
+	re = regexp.MustCompile("([a-z0-9\\-.]+)/([a-z0-9\\-.]+)")
 )
 
 // Add creates a new DnsZone Controller and adds it to the Manager with default RBAC. The Manager will set fields on
@@ -48,6 +55,19 @@ var _ reconciler.ObjectAdapter = &ResourceAdapter{}
 
 func (a *ResourceAdapter) Inject(r *reconciler.Reconciler) {
 	a.r = r
+}
+
+func (a *ResourceAdapter) FetchObject(ctx context.Context, request reconcile.Request) (interface{}, *metav1.ObjectMeta, runtime.Object, error) {
+
+	object := a.CreateObject()
+	runtimeObject := a.GetRuntimeObject(object)
+
+	err := a.r.Get(ctx, request.NamespacedName, runtimeObject)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	return object, a.GetObjectMeta(object), runtimeObject, nil
 }
 
 func (a *ResourceAdapter) IsCleanupOnDeletion() bool {
@@ -118,11 +138,15 @@ func (a *ResourceAdapter) CreateResource(obj interface{}) (interface{}, error) {
 	// Create records
 	change := &dns.Change{}
 	for _, rec := range kzone.Spec.Records {
+		rrdatas, err := a.resolveIpAddressReference(rec)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed resolving IP address for record: %+v", rec)
+		}
 		change.Additions = append(change.Additions, &dns.ResourceRecordSet{
 			Name:    rec.DnsName,
 			Type:    rec.Type,
 			Ttl:     rec.Ttl,
-			Rrdatas: rec.Rrdatas,
+			Rrdatas: rrdatas,
 		})
 	}
 	_, err = svc.Changes.Create(kzone.Spec.ProjectId, zoneName, change).Do()
@@ -216,11 +240,15 @@ func (a *ResourceAdapter) UpdateResource(obj interface{}, resource interface{}) 
 	// Map kzone records by name
 	krecordsByName := make(map[string]*v1beta1.DnsRecord)
 	for _, krec := range kzone.Spec.Records {
+		rrdatas, err := a.resolveIpAddressReference(krec)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed resolving IP address for record: %+v", krec)
+		}
 		krecordsByName[krec.DnsName] = &v1beta1.DnsRecord{
 			DnsName: krec.DnsName,
 			Type:    krec.Type,
 			Ttl:     krec.Ttl,
-			Rrdatas: krec.Rrdatas,
+			Rrdatas: rrdatas,
 		}
 	}
 
@@ -323,11 +351,15 @@ func (a *ResourceAdapter) IsUpdateNeeded(obj interface{}, resource interface{}) 
 	// Map kzone records by name
 	krecordsByName := make(map[string]*v1beta1.DnsRecord)
 	for _, krec := range kzone.Spec.Records {
+		rrdatas, err := a.resolveIpAddressReference(krec)
+		if err != nil {
+			return false, errors.Wrapf(err, "failed resolving IP address for record: %+v", krec)
+		}
 		krecordsByName[krec.DnsName] = &v1beta1.DnsRecord{
 			DnsName: krec.DnsName,
 			Type:    krec.Type,
 			Ttl:     krec.Ttl,
-			Rrdatas: krec.Rrdatas,
+			Rrdatas: rrdatas,
 		}
 	}
 
@@ -397,4 +429,35 @@ func (a *ResourceAdapter) UpdateObjectStatus(obj interface{}, resource interface
 
 	kzone.Status.Id = rzone.Zone.Id
 	return nil
+}
+
+func (a *ResourceAdapter) resolveIpAddressReference(record v1beta1.DnsRecord) ([]string, error) {
+
+	// If the DNS record is not an "A" record, return its "rrdatas" as-is
+	if record.Type != "A" {
+		return record.Rrdatas, nil
+	}
+
+	newRrdatas := make([]string, 0)
+	for rrdataIndex := range record.Rrdatas {
+		rrdata := record.Rrdatas[rrdataIndex]
+		matches := re.FindStringSubmatch(rrdata)
+		if matches != nil && len(matches) == 3 {
+			namespace := matches[1]
+			name := matches[2]
+			addr := v1beta1.IpAddress{}
+			err := a.r.Client.Get(context.TODO(), client.ObjectKey{Name: name, Namespace: namespace}, &addr)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed fetching referenced IP address '%s/%s'", namespace, name)
+			}
+			if addr.Status.Address != "" {
+				newRrdatas = append(newRrdatas, addr.Status.Address)
+			} else {
+				return nil, errors.Errorf("Ip address '%s/%s' is not ready yet", namespace, name)
+			}
+		} else {
+			newRrdatas = append(newRrdatas, rrdata)
+		}
+	}
+	return newRrdatas, nil
 }

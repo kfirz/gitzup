@@ -1,6 +1,7 @@
 package vpc
 
 import (
+	"context"
 	"fmt"
 	"github.com/kfirz/gitzup/internal/reconciler"
 	"github.com/kfirz/gitzup/internal/util/gcp"
@@ -13,6 +14,7 @@ import (
 	"net/http"
 	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 // Add creates a new IpAddress Controller and adds it to the Manager with default RBAC. The Manager will set fields on
@@ -38,6 +40,20 @@ type ResourceAdapter struct {
 
 // Ensure our resource adapter struct implements the reconcile.ResourceAdapter interface
 var _ reconciler.ObjectAdapter = &ResourceAdapter{}
+
+func (a *ResourceAdapter) FetchObject(ctx context.Context, request reconcile.Request) (interface{}, *metav1.ObjectMeta, runtime.Object, error) {
+
+	object := a.CreateObject()
+	runtimeObject := a.GetRuntimeObject(object)
+
+	err := a.r.Get(ctx, request.NamespacedName, runtimeObject)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	objectMeta := a.GetObjectMeta(object)
+	return object, objectMeta, runtimeObject, nil
+}
 
 func (a *ResourceAdapter) IsCleanupOnDeletion() bool {
 	return true

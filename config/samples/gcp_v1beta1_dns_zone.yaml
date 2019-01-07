@@ -8,10 +8,15 @@ spec:
   dnsName: randomly194756.com.
   records:
     - type: A
-      dnsName: a.randomly194756.com.
+      dnsName: addr.randomly194756.com.
       ttl: 60
       rrdatas:
         - "35.206.201.152"
+    - type: A
+      dnsName: sample-ip.randomly194756.com.
+      ttl: 60
+      rrdatas:
+        - default/sample-ip
     - type: CNAME
       dnsName: cname.randomly194756.com.
       ttl: 600

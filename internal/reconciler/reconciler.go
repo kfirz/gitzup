@@ -34,6 +34,7 @@ var (
 type ObjectAdapter interface {
 	Inject(reconciler *Reconciler)
 	IsCleanupOnDeletion() bool
+	FetchObject(ctx context.Context, request reconcile.Request) (interface{}, *metav1.ObjectMeta, runtime.Object, error)
 	CreateObject() interface{}
 	CreateList() interface{}
 	GetListItems(list interface{}) ([]interface{}, error)
@@ -107,13 +108,8 @@ func (r *Reconciler) Reconcile(request reconcile.Request) (reconcile.Result, err
 	mgrClient := r.Manager.GetClient()
 	adapter := r.ObjectAdapter
 
-	// Create resource wrapper adapter
-	object := adapter.CreateObject()
-	objectMeta := adapter.GetObjectMeta(object)
-	runtimeObject := adapter.GetRuntimeObject(object)
-
 	// Fetch the object
-	err := r.Get(ctx, request.NamespacedName, runtimeObject)
+	object, objectMeta, runtimeObject, err := adapter.FetchObject(ctx, request)
 	if err != nil {
 		if kerrors.IsNotFound(err) {
 			// Object not found, return (cleanup logic is implemented through finalizers)
@@ -250,7 +246,7 @@ func (r *Reconciler) Reconcile(request reconcile.Request) (reconcile.Result, err
 
 func (r *Reconciler) Start() error {
 	// Create a new controller
-	c, err := controller.New(r.Name + "-controller", r.Manager, controller.Options{Reconciler: r})
+	c, err := controller.New(r.Name+"-controller", r.Manager, controller.Options{Reconciler: r})
 	if err != nil {
 		return errors.Wrapf(err, "failed creating controller for '%s' reconciler", r.Name)
 	}
