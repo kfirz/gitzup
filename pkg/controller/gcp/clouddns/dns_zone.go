@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/api/dns/v1"
 	"google.golang.org/api/googleapi"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"net/http"
@@ -21,7 +22,7 @@ import (
 )
 
 var (
-	re = regexp.MustCompile("([a-z0-9\\-.]+)/([a-z0-9\\-.]+)")
+	re = regexp.MustCompile("(ipaddress|service):([a-z0-9\\-.]+)/([a-z0-9\\-.]+)")
 )
 
 // Add creates a new DnsZone Controller and adds it to the Manager with default RBAC. The Manager will set fields on
@@ -436,28 +437,55 @@ func (a *ResourceAdapter) resolveIpAddressReference(record v1beta1.DnsRecord) ([
 	// If the DNS record is not an "A" record, return its "rrdatas" as-is
 	if record.Type != "A" {
 		return record.Rrdatas, nil
+	} else if len(record.Rrdatas) == 0 {
+		return nil, errors.Errorf("record has no 'rrdatas'")
 	}
 
 	newRrdatas := make([]string, 0)
 	for rrdataIndex := range record.Rrdatas {
 		rrdata := record.Rrdatas[rrdataIndex]
 		matches := re.FindStringSubmatch(rrdata)
-		if matches != nil && len(matches) == 3 {
-			namespace := matches[1]
-			name := matches[2]
-			addr := v1beta1.IpAddress{}
-			err := a.r.Client.Get(context.TODO(), client.ObjectKey{Name: name, Namespace: namespace}, &addr)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed fetching referenced IP address '%s/%s'", namespace, name)
-			}
-			if addr.Status.Address != "" {
-				newRrdatas = append(newRrdatas, addr.Status.Address)
+		if matches != nil && len(matches) == 4 {
+			objectType := matches[1]
+			namespace := matches[2]
+			name := matches[3]
+			if objectType == "ipaddress" {
+				addr := v1beta1.IpAddress{}
+				err := a.r.Client.Get(context.TODO(), client.ObjectKey{Name: name, Namespace: namespace}, &addr)
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed fetching referenced IP address '%s/%s'", namespace, name)
+				}
+				if addr.Status.Address != "" {
+					newRrdatas = append(newRrdatas, addr.Status.Address)
+				} else {
+					return nil, errors.Errorf("Ip address '%s/%s' is not ready yet", namespace, name)
+				}
+			} else if objectType == "service" {
+				svc := corev1.Service{}
+				err := a.r.Client.Get(context.TODO(), client.ObjectKey{Name: name, Namespace: namespace}, &svc)
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed fetching referenced Service '%s/%s'", namespace, name)
+				}
+				if svc.Spec.Type == corev1.ServiceTypeLoadBalancer {
+					for _, ingress := range svc.Status.LoadBalancer.Ingress {
+						if ingress.IP != "" {
+							newRrdatas = append(newRrdatas, ingress.IP)
+						}
+					}
+				} else {
+					return nil, errors.Errorf("Service '%s/%s' is not a LoadBalancer service (it is '%s')", namespace, name, svc.Spec.Type)
+				}
 			} else {
-				return nil, errors.Errorf("Ip address '%s/%s' is not ready yet", namespace, name)
+				return nil, errors.Errorf("invalid target: %s", objectType)
 			}
 		} else {
 			newRrdatas = append(newRrdatas, rrdata)
 		}
 	}
+
+	if len(newRrdatas) == 0 {
+		return nil, errors.Errorf("could not resolve DNS record 'rrdatas'")
+	}
+
 	return newRrdatas, nil
 }
