@@ -212,6 +212,7 @@ func (r *Reconciler) Reconcile(request reconcile.Request) (reconcile.Result, err
 			return reconcile.Result{}, errors.Wrapf(err, "could not update external resource")
 		}
 		r.InfoEvent(runtimeObject, "ExternalResourceUpdated", "Updated external resource")
+		return reconcile.Result{Requeue: true}, nil
 	}
 
 	// Check if an update to the object status is needed
