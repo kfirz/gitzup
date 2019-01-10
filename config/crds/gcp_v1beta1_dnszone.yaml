@@ -64,6 +64,9 @@ spec:
                 - rrdatas
                 type: object
               type: array
+            zoneName:
+              pattern: '[a-z][a-z0-9-]*[a-z0-9]'
+              type: string
           required:
           - projectId
           - dnsName
@@ -74,6 +77,8 @@ spec:
             Id:
               format: int64
               type: integer
+            zoneName:
+              type: string
           type: object
   version: v1beta1
 status:

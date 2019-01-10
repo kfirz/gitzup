@@ -36,12 +36,16 @@ type DnsZoneSpec struct {
 	// +kubebuilder:validation:Pattern=[^.]+\.[^.]+\.
 	DnsName string `json:"dnsName"`
 
+	// +kubebuilder:validation:Pattern=[a-z][a-z0-9-]*[a-z0-9]
+	ZoneName string `json:"zoneName,omitempty"`
+
 	Records []DnsRecord `json:"records"`
 }
 
 // GoogleCloudDnsZoneStatus defines the observed state of GoogleCloudDnsZone
 type DnsZoneStatus struct {
 	Id uint64 `json:"Id,omitempty"`
+	ZoneName string `json:"zoneName,omitempty"`
 }
 
 // +genclient

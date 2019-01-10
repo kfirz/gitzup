@@ -115,7 +115,13 @@ func (a *ResourceAdapter) CreateResource(obj interface{}) (interface{}, error) {
 	if !ok {
 		return nil, errors.Errorf("received '%s' object instead of '*DnsZone'", reflect.TypeOf(obj))
 	}
-	zoneName := kzone.ObjectMeta.Namespace + "-" + kzone.ObjectMeta.Name
+
+	var zoneName string
+	if kzone.Spec.ZoneName != "" {
+		zoneName = kzone.Spec.ZoneName
+	} else {
+		zoneName = kzone.ObjectMeta.Namespace + "-" + kzone.ObjectMeta.Name
+	}
 
 	// Create Google APIs client
 	svc, err := gcp.CreateDnsClient()
@@ -163,7 +169,13 @@ func (a *ResourceAdapter) RetrieveResource(obj interface{}) (interface{}, error)
 	if !ok {
 		return nil, errors.Errorf("received '%s' object instead of '*DnsZone'", reflect.TypeOf(obj))
 	}
-	zoneName := kzone.ObjectMeta.Namespace + "-" + kzone.ObjectMeta.Name
+
+	var zoneName string
+	if kzone.Spec.ZoneName != "" {
+		zoneName = kzone.Spec.ZoneName
+	} else {
+		zoneName = kzone.ObjectMeta.Namespace + "-" + kzone.ObjectMeta.Name
+	}
 
 	// Create Google APIs client
 	svc, err := gcp.CreateDnsClient()
@@ -211,7 +223,12 @@ func (a *ResourceAdapter) UpdateResource(obj interface{}, resource interface{}) 
 		return nil, errors.Errorf("received '%s' resource instead of '*zoneAndRecords'", reflect.TypeOf(resource))
 	}
 
-	zoneName := kzone.ObjectMeta.Namespace + "-" + kzone.ObjectMeta.Name
+	var zoneName string
+	if kzone.Spec.ZoneName != "" {
+		zoneName = kzone.Spec.ZoneName
+	} else {
+		zoneName = kzone.ObjectMeta.Namespace + "-" + kzone.ObjectMeta.Name
+	}
 
 	// Create Google APIs client
 	svc, err := gcp.CreateDnsClient()
@@ -319,8 +336,15 @@ func (a *ResourceAdapter) DeleteResource(obj interface{}) error {
 		return errors.Wrapf(err, "failed creating GCP DNS client")
 	}
 
+	var zoneName string
+	if kzone.Spec.ZoneName != "" {
+		zoneName = kzone.Spec.ZoneName
+	} else {
+		zoneName = kzone.ObjectMeta.Namespace + "-" + kzone.ObjectMeta.Name
+	}
+
 	// Delete it
-	err = svc.ManagedZones.Delete(kzone.Spec.ProjectId, kzone.ObjectMeta.Namespace+"-"+kzone.ObjectMeta.Name).Do()
+	err = svc.ManagedZones.Delete(kzone.Spec.ProjectId, zoneName).Do()
 	if err != nil {
 		return errors.Wrapf(err, "failed deleting DNS zone")
 	}
@@ -411,6 +435,9 @@ func (a *ResourceAdapter) IsStatusUpdateNeeded(obj interface{}, resource interfa
 	if rzone.Zone.Id != kzone.Status.Id {
 		return true, nil
 	}
+	if rzone.Zone.Name != kzone.Status.ZoneName {
+		return true, nil
+	}
 
 	return false, nil
 }
@@ -429,6 +456,7 @@ func (a *ResourceAdapter) UpdateObjectStatus(obj interface{}, resource interface
 	}
 
 	kzone.Status.Id = rzone.Zone.Id
+	kzone.Status.ZoneName = rzone.Zone.Name
 	return nil
 }
 
