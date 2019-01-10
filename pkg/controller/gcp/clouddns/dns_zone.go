@@ -255,63 +255,45 @@ func (a *ResourceAdapter) UpdateResource(obj interface{}, resource interface{}) 
 		return nil, errors.Wrapf(err, "operation failed")
 	}
 
-	// Map kzone records by name
-	krecordsByName := make(map[string]*v1beta1.DnsRecord)
+	// Compare spec DNS records against the actual zone's DNS records, and update accordingly
 	for _, krec := range kzone.Spec.Records {
 		rrdatas, err := a.resolveIpAddressReference(krec)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed resolving IP address for record: %+v", krec)
 		}
-		krecordsByName[krec.DnsName] = &v1beta1.DnsRecord{
-			DnsName: krec.DnsName,
-			Type:    krec.Type,
-			Ttl:     krec.Ttl,
-			Rrdatas: rrdatas,
-		}
-	}
 
-	// Map rzone records by name
-	rrecordsByName := make(map[string]*dns.ResourceRecordSet)
-	for _, rrec := range rzone.Records {
-		rrecordsByName[rrec.Name] = &dns.ResourceRecordSet{
-			Kind:             rrec.Kind,
-			Name:             rrec.Name,
-			Type:             rrec.Type,
-			Ttl:              rrec.Ttl,
-			Rrdatas:          rrec.Rrdatas,
-			ForceSendFields:  rrec.ForceSendFields,
-			NullFields:       rrec.NullFields,
-			SignatureRrdatas: rrec.SignatureRrdatas,
-		}
-	}
-
-	// Compare spec DNS records against the actual zone's DNS records, and update accordingly
-	for krecName, krec := range krecordsByName {
-		if rrec, ok := rrecordsByName[krecName]; ok {
-			if krec.Type != rrec.Type || krec.Ttl != rrec.Ttl || !util.StringSlicesEqual(krec.Rrdatas, rrec.Rrdatas) {
-				changeSet := &dns.Change{
-					Deletions: []*dns.ResourceRecordSet{rrec},
-					Additions: []*dns.ResourceRecordSet{
-						{
-							Name:    rrec.Name,
-							Type:    krec.Type,
-							Ttl:     krec.Ttl,
-							Rrdatas: krec.Rrdatas,
+		found := false
+		for _, rrec := range rzone.Records {
+			if rrec.Type == krec.Type && rrec.Name == krec.DnsName {
+				if krec.Ttl != rrec.Ttl || !util.StringSlicesEqual(rrdatas, rrec.Rrdatas) {
+					changeSet := &dns.Change{
+						Deletions: []*dns.ResourceRecordSet{rrec},
+						Additions: []*dns.ResourceRecordSet{
+							{
+								Name:    rrec.Name,
+								Type:    krec.Type,
+								Ttl:     krec.Ttl,
+								Rrdatas: rrdatas,
+							},
 						},
-					},
+					}
+					_, err = svc.Changes.Create(kzone.Spec.ProjectId, zoneName, changeSet).Do()
+					if err != nil {
+						return nil, errors.Wrapf(err, "failed updating DNS record")
+					}
 				}
-				_, err = svc.Changes.Create(kzone.Spec.ProjectId, zoneName, changeSet).Do()
-				if err != nil {
-					return nil, errors.Wrapf(err, "failed updating DNS record")
-				}
+				found = true
+				break
 			}
-		} else {
+		}
+
+		if !found {
 			changeSet := &dns.Change{
 				Additions: []*dns.ResourceRecordSet{{
 					Name:    krec.DnsName,
 					Type:    krec.Type,
 					Ttl:     krec.Ttl,
-					Rrdatas: krec.Rrdatas,
+					Rrdatas: rrdatas,
 				}},
 			}
 			_, err = svc.Changes.Create(kzone.Spec.ProjectId, zoneName, changeSet).Do()
@@ -373,44 +355,24 @@ func (a *ResourceAdapter) IsUpdateNeeded(obj interface{}, resource interface{}) 
 		return true, nil
 	}
 
-	// Map kzone records by name
-	krecordsByName := make(map[string]*v1beta1.DnsRecord)
 	for _, krec := range kzone.Spec.Records {
 		rrdatas, err := a.resolveIpAddressReference(krec)
 		if err != nil {
 			return false, errors.Wrapf(err, "failed resolving IP address for record: %+v", krec)
 		}
-		krecordsByName[krec.DnsName] = &v1beta1.DnsRecord{
-			DnsName: krec.DnsName,
-			Type:    krec.Type,
-			Ttl:     krec.Ttl,
-			Rrdatas: rrdatas,
-		}
-	}
 
-	// Map rzone records by name
-	rrecordsByName := make(map[string]*dns.ResourceRecordSet)
-	for _, rrec := range rzone.Records {
-		rrecordsByName[rrec.Name] = rrec
-		rrecordsByName[rrec.Name] = &dns.ResourceRecordSet{
-			Kind:             rrec.Kind,
-			Name:             rrec.Name,
-			Type:             rrec.Type,
-			Ttl:              rrec.Ttl,
-			Rrdatas:          rrec.Rrdatas,
-			ForceSendFields:  rrec.ForceSendFields,
-			NullFields:       rrec.NullFields,
-			SignatureRrdatas: rrec.SignatureRrdatas,
-		}
-	}
-
-	// Compare spec DNS records against the actual zone's DNS records
-	for krecName, krec := range krecordsByName {
-		if rrec, ok := rrecordsByName[krecName]; ok {
-			if krec.Type != rrec.Type || krec.Ttl != rrec.Ttl || !util.StringSlicesEqual(krec.Rrdatas, rrec.Rrdatas) {
-				return true, nil
+		found := false
+		for _, rrec := range rzone.Records {
+			if rrec.Type == krec.Type && rrec.Name == krec.DnsName {
+				if krec.Ttl != rrec.Ttl || !util.StringSlicesEqual(rrdatas, rrec.Rrdatas) {
+					return true, nil
+				}
+				found = true
+				break
 			}
-		} else {
+		}
+
+		if !found {
 			return true, nil
 		}
 	}
